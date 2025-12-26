@@ -22,7 +22,7 @@ Maple is a lightweight code editor that demonstrates deep technical understandin
 - TypeScript strict mode for type safety
 - Custom tokenizer implementation (no external syntax highlighting libraries)
 - Client-side file system using IndexedDB
-- VS Code Dark+ inspired theme
+- Bearded Theme Black & Gold color scheme
 - Tailwind CSS v4 for styling
 
 ## Tech Stack
@@ -161,15 +161,102 @@ This project uses:
 - File load: <100ms
 - UI updates: 60fps
 
-## Roadmap
+## Implementation Status
 
-- [ ] Complete state machine tokenizer
-- [ ] Add more language support (Python, HTML, CSS, JSON)
-- [ ] Implement find and replace
-- [ ] Add bracket matching
-- [ ] Support code folding
-- [ ] Web Worker for large file handling
-- [ ] Virtual scrolling for 10k+ line files
+### Completed
+
+- [x] **Project Setup**
+  - Next.js 16 with App Router
+  - TypeScript strict mode
+  - Tailwind CSS v4 with Bearded Theme Black & Gold
+  - Biome linting/formatting
+  - Bun runtime
+
+- [x] **State Machine Tokenizer** (`lib/tokenizer/`)
+  - Character stream with position tracking and lookahead
+  - State machine for handling multi-line constructs
+  - Token types: keyword, string, number, comment, operator, punctuation, identifier, function, class, constant, property, etc.
+  - Escape sequence handling in strings
+  - Template literal support with `${}` expressions
+  - Number formats: decimal, hex (`0x`), binary (`0b`), octal (`0o`), BigInt (`n`), scientific notation
+  - Multi-line comment continuation
+
+- [x] **TypeScript/JavaScript Language Support**
+  - Keywords, operators, punctuation
+  - Constants (`true`, `false`, `null`, `undefined`, `NaN`, `Infinity`)
+  - Built-in types and utilities
+  - Function and class detection
+
+- [x] **Incremental Tokenization** (`lib/tokenizer/lineCache.ts`)
+  - Line-level caching
+  - Change detection (only re-tokenize modified lines)
+  - Context propagation for multi-line tokens
+  - Cache invalidation on context change
+
+- [x] **Syntax Highlighting** (`lib/highlighting/`)
+  - Token-to-CSS class mapping
+  - React element generation
+  - Memoized line renderer
+  - Bearded Theme Black & Gold colors
+
+- [x] **Editor Integration**
+  - `useTokenizer` hook with debouncing (300ms)
+  - Overlay technique (transparent textarea + highlighted code layer)
+  - Status bar with cursor position
+
+- [x] **IndexedDB Storage** (`lib/storage/`)
+  - Database wrapper
+  - Virtual file system with CRUD operations
+
+### Remaining
+
+- [ ] **Additional Language Support**
+  - CSS tokenizer
+  - HTML tokenizer (with embedded JS/CSS)
+  - JSON tokenizer
+  - Markdown tokenizer
+  - Python tokenizer
+
+- [ ] **Editor Features**
+  - Cursor position tracking from textarea events
+  - Selection highlighting
+  - Line highlighting (active line)
+  - Line numbers click to select
+  - Auto-indent on Enter
+  - Tab handling (insert spaces)
+  - Undo/Redo integration with browser
+
+- [ ] **UI Components**
+  - File tree sidebar
+  - Tab bar with close buttons
+  - Command palette (Cmd/Ctrl+Shift+P)
+  - Find and replace
+
+- [ ] **Advanced Features**
+  - Bracket matching and highlighting
+  - Code folding
+  - Minimap
+  - Auto-save to IndexedDB
+  - File open/save dialogs
+
+- [ ] **Performance Optimizations**
+  - Web Worker for files >1000 lines
+  - Virtual scrolling for 10k+ line files
+  - Viewport-only tokenization
+
+## Theme Colors (Bearded Theme Black & Gold)
+
+| Token Type | Color | Hex |
+|------------|-------|-----|
+| Keywords | Blue | `#11b7d4` |
+| Strings | Salmon | `#c62f52` |
+| Numbers | Turquoise | `#38c7bd` |
+| Comments | Green | `#00a884` |
+| Functions | Gold | `#c7910c` |
+| Variables | Pink | `#d46ec0` |
+| Classes | Purple | `#a85ff1` |
+| Constants | Orange | `#d4770c` |
+| Background | Black | `#111418` |
 
 ## Why Build From Scratch?
 

@@ -3,7 +3,7 @@ export const EDITOR_CONSTANTS = {
     LINE_HEIGHT: 20,
     GUTTER_WIDTH: 60,
     MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-    TOKENIZE_DEBOUNCE: 300, // ms
+    TOKENIZE_DEBOUNCE: 16, // ms - minimal debounce since worker handles heavy lifting
     AUTO_SAVE_DELAY: 500, // ms
 } as const;
 

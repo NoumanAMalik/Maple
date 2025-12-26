@@ -1,47 +1,53 @@
 @import "tailwindcss";
 
 :root {
-    /* Base colors */
-    --background: #1e1e1e;
-    --foreground: #d4d4d4;
+    /* Base colors - Bearded Theme Black & Gold */
+    --background: #111418;
+    --foreground: #e3e3e3;
 
-    /* Editor colors (VS Code Dark+ inspired) */
-    --editor-bg: #1e1e1e;
-    --editor-fg: #d4d4d4;
-    --editor-selection: #264f78;
-    --editor-line-number: #858585;
-    --editor-line-number-active: #c6c6c6;
-    --editor-gutter: #1e1e1e;
-    --editor-cursor: #aeafad;
-    --editor-active-line: #282828;
+    /* Editor colors (Bearded Theme Black & Gold) */
+    --editor-bg: #111418;
+    --editor-fg: #e3e3e3;
+    --editor-selection: #2a3540;
+    --editor-line-number: #5a5a5a;
+    --editor-line-number-active: #c7910c;
+    --editor-gutter: #111418;
+    --editor-cursor: #c7910c;
+    --editor-active-line: #1a1d23;
 
-    /* Syntax highlighting colors */
-    --syntax-keyword: #569cd6;
-    --syntax-string: #ce9178;
-    --syntax-number: #b5cea8;
-    --syntax-comment: #6a9955;
-    --syntax-function: #dcdcaa;
-    --syntax-variable: #9cdcfe;
-    --syntax-operator: #d4d4d4;
-    --syntax-punctuation: #d4d4d4;
-    --syntax-class: #4ec9b0;
-    --syntax-constant: #4fc1ff;
-    --syntax-parameter: #9cdcfe;
-    --syntax-property: #9cdcfe;
-    --syntax-tag: #569cd6;
-    --syntax-attribute: #9cdcfe;
-    --syntax-regex: #d16969;
+    /* Syntax highlighting colors (Bearded Theme palette) */
+    --syntax-keyword: #11b7d4;
+    --syntax-string: #c62f52;
+    --syntax-number: #38c7bd;
+    --syntax-comment: #00a884;
+    --syntax-function: #c7910c;
+    --syntax-variable: #d46ec0;
+    --syntax-operator: #e3e3e3;
+    --syntax-punctuation: #e3e3e3;
+    --syntax-class: #a85ff1;
+    --syntax-constant: #d4770c;
+    --syntax-parameter: #d46ec0;
+    --syntax-property: #d46ec0;
+    --syntax-tag: #11b7d4;
+    --syntax-attribute: #d46ec0;
+    --syntax-regex: #e35535;
 
     /* UI colors */
-    --ui-border: #3c3c3c;
-    --ui-hover: #2a2d2e;
-    --ui-active: #37373d;
-    --ui-accent: #0078d4;
-    --ui-accent-hover: #1c8de6;
-    --ui-tab-bg: #2d2d2d;
-    --ui-tab-active-bg: #1e1e1e;
-    --ui-sidebar-bg: #252526;
-    --ui-statusbar-bg: #007acc;
+    --ui-border: #2a2d33;
+    --ui-hover: #1a1d23;
+    --ui-active: #2a3540;
+    --ui-accent: #c7910c;
+    --ui-accent-hover: #d4a00c;
+    --ui-tab-bg: #0d0f12;
+    --ui-tab-active-bg: #111418;
+    --ui-sidebar-bg: #0d0f12;
+    --ui-statusbar-bg: #0d0f12;
+
+    /* Semantic level colors */
+    --level-danger: #e35535;
+    --level-info: #11b7d4;
+    --level-success: #00a884;
+    --level-warning: #d4770c;
 }
 
 @theme inline {
@@ -80,6 +86,17 @@
     --color-ui-tab-active-bg: var(--ui-tab-active-bg);
     --color-ui-sidebar-bg: var(--ui-sidebar-bg);
     --color-ui-statusbar-bg: var(--ui-statusbar-bg);
+
+    /* Semantic level colors */
+    --color-level-danger: var(--level-danger);
+    --color-level-info: var(--level-info);
+    --color-level-success: var(--level-success);
+    --color-level-warning: var(--level-warning);
+}
+
+html,
+body {
+    overscroll-behavior: none;
 }
 
 body {
