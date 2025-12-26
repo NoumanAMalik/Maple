@@ -47,7 +47,6 @@ export function useTokenizerWorker(options: UseTokenizerWorkerOptions): UseToken
     const [tokens, setTokens] = useState<Token[]>([]);
     const [isTokenizing, setIsTokenizing] = useState(false);
     const [errors, setErrors] = useState<TokenizerError[]>([]);
-    const [actualLineCount, setActualLineCount] = useState(1);
 
     // Refs for worker management
     const workerRef = useRef<Worker | null>(null);
@@ -150,10 +149,16 @@ export function useTokenizerWorker(options: UseTokenizerWorkerOptions): UseToken
         sendTokenizeRequest();
     }, [sendTokenizeRequest]);
 
-    // Memoized highlighted lines
+    // Compute line count directly during render (no lag from useEffect)
+    const actualLineCount = useMemo(
+        () => (content ? content.split("\n").length : 1),
+        [content],
+    );
+
+    // Memoized highlighted lines with optimistic line count
     const highlightedLines = useMemo(() => {
-        return createHighlightedLines(tokens);
-    }, [tokens]);
+        return createHighlightedLines(tokens, actualLineCount);
+    }, [tokens, actualLineCount]);
 
     return {
         tokens,

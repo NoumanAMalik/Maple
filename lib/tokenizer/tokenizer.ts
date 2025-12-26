@@ -46,8 +46,12 @@ export function tokenizeLine(
     const context = { ...startContext, lastToken: startContext.lastToken };
     const tokens: Token[] = [];
 
+    // lineNumber is 1-based; CharacterStream.line also starts at 1,
+    // so pass lineNumber - 1 as the offset to get correct line numbers
+    const lineOffset = lineNumber - 1;
+
     while (!stream.eof()) {
-        const token = consumeToken(stream, context, rules, lineNumber);
+        const token = consumeToken(stream, context, rules, lineOffset);
         if (token) {
             tokens.push(token);
             context.lastToken = token;
