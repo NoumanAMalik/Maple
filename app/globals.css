@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    /* Base colors */
+    --background: #1e1e1e;
+    --foreground: #d4d4d4;
+
+    /* Editor colors (VS Code Dark+ inspired) */
+    --editor-bg: #1e1e1e;
+    --editor-fg: #d4d4d4;
+    --editor-selection: #264f78;
+    --editor-line-number: #858585;
+    --editor-line-number-active: #c6c6c6;
+    --editor-gutter: #1e1e1e;
+    --editor-cursor: #aeafad;
+    --editor-active-line: #282828;
+
+    /* Syntax highlighting colors */
+    --syntax-keyword: #569cd6;
+    --syntax-string: #ce9178;
+    --syntax-number: #b5cea8;
+    --syntax-comment: #6a9955;
+    --syntax-function: #dcdcaa;
+    --syntax-variable: #9cdcfe;
+    --syntax-operator: #d4d4d4;
+    --syntax-punctuation: #d4d4d4;
+    --syntax-class: #4ec9b0;
+    --syntax-constant: #4fc1ff;
+    --syntax-parameter: #9cdcfe;
+    --syntax-property: #9cdcfe;
+    --syntax-tag: #569cd6;
+    --syntax-attribute: #9cdcfe;
+    --syntax-regex: #d16969;
+
+    /* UI colors */
+    --ui-border: #3c3c3c;
+    --ui-hover: #2a2d2e;
+    --ui-active: #37373d;
+    --ui-accent: #0078d4;
+    --ui-accent-hover: #1c8de6;
+    --ui-tab-bg: #2d2d2d;
+    --ui-tab-active-bg: #1e1e1e;
+    --ui-sidebar-bg: #252526;
+    --ui-statusbar-bg: #007acc;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    /* Editor theme colors */
+    --color-editor-bg: var(--editor-bg);
+    --color-editor-fg: var(--editor-fg);
+    --color-editor-selection: var(--editor-selection);
+    --color-editor-line-number: var(--editor-line-number);
+    --color-editor-cursor: var(--editor-cursor);
+    --color-editor-active-line: var(--editor-active-line);
+
+    /* Syntax colors */
+    --color-syntax-keyword: var(--syntax-keyword);
+    --color-syntax-string: var(--syntax-string);
+    --color-syntax-number: var(--syntax-number);
+    --color-syntax-comment: var(--syntax-comment);
+    --color-syntax-function: var(--syntax-function);
+    --color-syntax-variable: var(--syntax-variable);
+    --color-syntax-operator: var(--syntax-operator);
+    --color-syntax-class: var(--syntax-class);
+    --color-syntax-constant: var(--syntax-constant);
+    --color-syntax-tag: var(--syntax-tag);
+    --color-syntax-attribute: var(--syntax-attribute);
+
+    /* UI colors */
+    --color-ui-border: var(--ui-border);
+    --color-ui-hover: var(--ui-hover);
+    --color-ui-active: var(--ui-active);
+    --color-ui-accent: var(--ui-accent);
+    --color-ui-tab-bg: var(--ui-tab-bg);
+    --color-ui-tab-active-bg: var(--ui-tab-active-bg);
+    --color-ui-sidebar-bg: var(--ui-sidebar-bg);
+    --color-ui-statusbar-bg: var(--ui-statusbar-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Selection styling */
+::selection {
+    background: var(--editor-selection);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--editor-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #424242;
+    border: 3px solid var(--editor-bg);
+    border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
 }
