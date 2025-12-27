@@ -1,3 +1,5 @@
+import type { LanguageId } from "@/lib/tokenizer/types";
+
 export interface CursorPosition {
     line: number;
     column: number;
@@ -53,6 +55,7 @@ export interface EditorConfig {
     wordWrap: boolean;
     showLineNumbers: boolean;
     showMinimap: boolean;
+    language: LanguageId;
 }
 
 export const defaultEditorConfig: EditorConfig = {
@@ -64,6 +67,7 @@ export const defaultEditorConfig: EditorConfig = {
     wordWrap: false,
     showLineNumbers: true,
     showMinimap: false,
+    language: "typescript",
 };
 
 /**

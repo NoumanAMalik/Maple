@@ -1,24 +1,67 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import type { EditorConfig } from "@/types/editor";
+import type { Token } from "@/lib/tokenizer/types";
+import { tokenizeSingleLine } from "@/lib/tokenizer/tokenizeLine";
+import { getTokenColor } from "@/lib/tokenizer/colors";
 
 interface LineProps {
-    /** Line number (1-indexed) */
     lineNumber: number;
-    /** Content of the line */
     content: string;
-    /** Whether this is the current cursor line */
     isCurrent: boolean;
-    /** Editor configuration */
     config: EditorConfig;
+    tokens?: Token[];
 }
 
-/**
- * A single line of text in the editor.
- * Memoized for performance - only re-renders when content or current state changes.
- */
-export const Line = memo(function Line({ lineNumber, content, isCurrent, config }: LineProps) {
+function renderWithTokens(content: string, tokens: Token[]): ReactNode {
+    if (tokens.length === 0) {
+        return content || "\u00A0";
+    }
+
+    const segments: ReactNode[] = [];
+    let lastEnd = 0;
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const tokenEnd = token.start + token.length;
+
+        if (token.start > lastEnd) {
+            segments.push(content.slice(lastEnd, token.start));
+        }
+
+        const text = content.slice(token.start, tokenEnd);
+        const color = getTokenColor(token.type);
+
+        if (color) {
+            segments.push(
+                <span key={i} style={{ color }}>
+                    {text}
+                </span>,
+            );
+        } else {
+            segments.push(text);
+        }
+
+        lastEnd = tokenEnd;
+    }
+
+    if (lastEnd < content.length) {
+        segments.push(content.slice(lastEnd));
+    }
+
+    return segments.length > 0 ? segments : "\u00A0";
+}
+
+export const Line = memo(function Line({ lineNumber, content, isCurrent, config, tokens }: LineProps) {
+    const rendered = useMemo(() => {
+        if (tokens) {
+            return renderWithTokens(content, tokens);
+        }
+        const { tokens: computedTokens } = tokenizeSingleLine(config.language, content);
+        return renderWithTokens(content, computedTokens);
+    }, [content, config.language, tokens]);
+
     return (
         <div
             className="editor-line"
@@ -37,7 +80,7 @@ export const Line = memo(function Line({ lineNumber, content, isCurrent, config 
                 boxSizing: "border-box",
             }}
         >
-            {content || "\u00A0"}
+            {rendered}
         </div>
     );
 });
