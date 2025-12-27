@@ -45,7 +45,33 @@ const jetbrainsMono = localFont({
 
 export const metadata: Metadata = {
     title: "Maple Editor",
-    description: "A custom-built code editor with VS Code-like experience",
+    description: "A custom-built code editor with syntax highlighting. Code beautifully, in your browser.",
+    metadataBase: new URL("https://trymaple.dev"),
+    openGraph: {
+        title: "Maple",
+        description: "Code beautifully, in your browser.",
+        siteName: "Maple Editor",
+        type: "website",
+        images: [
+            {
+                url: "/api/og",
+                width: 1200,
+                height: 630,
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Maple",
+        description: "Code beautifully, in your browser.",
+        images: [
+            {
+                url: "/api/og",
+                width: 1200,
+                height: 630,
+            },
+        ],
+    },
 };
 
 export default function RootLayout({
