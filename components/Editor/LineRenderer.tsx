@@ -57,6 +57,9 @@ export function LineRenderer({
         }
 
         return lines;
+        // Note: getLine intentionally omitted from deps - version change triggers recompute,
+        // and the fresh getLine from closure will be used
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lineCount, firstVisibleLine, lastVisibleLine, cursor.line, version]);
 
     // Calculate the offset for the first rendered line

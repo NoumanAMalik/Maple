@@ -270,7 +270,7 @@ export function CodeEditor({
                             config={editor.config}
                         />
 
-                        {/* Lines */}
+                        {/* Lines (plain text - no syntax highlighting) */}
                         <LineRenderer
                             getLine={editor.getLine}
                             lineCount={editor.getLineCount()}
