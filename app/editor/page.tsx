@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { CodeEditor } from "@/components/Editor";
+import { ActivityBar, CodeEditor, Explorer } from "@/components/Editor";
 import type { CursorPosition } from "@/types/editor";
 
 // Sample content for testing
@@ -66,6 +66,7 @@ console.log("Users:", service.findAll());
 export default function EditorPage() {
     const [cursorPosition, setCursorPosition] = useState<CursorPosition>({ line: 1, column: 1 });
     const [isDirty, setIsDirty] = useState(false);
+    const [isExplorerOpen, setIsExplorerOpen] = useState(true);
 
     const handleContentChange = useCallback((_content: string) => {
         setIsDirty(true);
@@ -73,6 +74,10 @@ export default function EditorPage() {
 
     const handleCursorChange = useCallback((position: CursorPosition) => {
         setCursorPosition(position);
+    }, []);
+
+    const toggleExplorer = useCallback(() => {
+        setIsExplorerOpen((prev) => !prev);
     }, []);
 
     return (
@@ -86,15 +91,6 @@ export default function EditorPage() {
 
             {/* Main Editor Area */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar - Placeholder */}
-                <div className="w-60 border-r border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)]">
-                    <div className="p-4">
-                        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--editor-line-number)]">
-                            Explorer
-                        </h2>
-                    </div>
-                </div>
-
                 {/* Editor Content */}
                 <div className="relative flex-1 overflow-hidden">
                     <CodeEditor
@@ -104,6 +100,9 @@ export default function EditorPage() {
                         autoFocus
                     />
                 </div>
+
+                <Explorer isOpen={isExplorerOpen} />
+                <ActivityBar isExplorerOpen={isExplorerOpen} onToggleExplorer={toggleExplorer} />
             </div>
 
             {/* Status Bar */}

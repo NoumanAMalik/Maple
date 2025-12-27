@@ -1,7 +1,9 @@
+export { ActivityBar } from "./ActivityBar";
 export { CodeEditor } from "./CodeEditor";
+export { CursorRenderer } from "./CursorRenderer";
+export { Explorer } from "./Explorer";
 export { Gutter } from "./Gutter";
+export { HiddenTextarea } from "./HiddenTextarea";
 export { Line } from "./Line";
 export { LineRenderer } from "./LineRenderer";
-export { CursorRenderer } from "./CursorRenderer";
 export { SelectionRenderer } from "./SelectionRenderer";
-export { HiddenTextarea } from "./HiddenTextarea";

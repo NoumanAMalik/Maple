@@ -55,6 +55,16 @@
     --color-foreground: var(--foreground);
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-jetbrains-mono);
+    --font-serif: var(--font-instrument-serif);
+
+    /* Landing page colors */
+    --color-maple-cream: #fbf7f4;
+    --color-maple-warm: #f5ede6;
+    --color-maple-text: #1a1612;
+    --color-maple-text-secondary: #6b6056;
+    --color-maple-accent: #c17f59;
+    --color-maple-accent-hover: #a86b48;
+    --color-maple-border: #e8e0d8;
 
     /* Editor theme colors */
     --color-editor-bg: var(--editor-bg);
