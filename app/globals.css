@@ -8,12 +8,12 @@
     /* Editor colors (Bearded Theme Black & Gold) */
     --editor-bg: #111418;
     --editor-fg: #e3e3e3;
-    --editor-selection: #2a3540;
+    --editor-selection: rgba(42, 53, 64, 0.4);
     --editor-line-number: #5a5a5a;
     --editor-line-number-active: #c7910c;
     --editor-gutter: #111418;
     --editor-cursor: #c7910c;
-    --editor-active-line: #1a1d23;
+    --editor-active-line: rgba(26, 29, 35, 0.4);
 
     /* Syntax highlighting colors (Bearded Theme palette) */
     --syntax-keyword: #11b7d4;
@@ -54,7 +54,7 @@
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+    --font-mono: var(--font-jetbrains-mono);
 
     /* Editor theme colors */
     --color-editor-bg: var(--editor-bg);

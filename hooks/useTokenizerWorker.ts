@@ -83,7 +83,7 @@ export function useTokenizerWorker(options: UseTokenizerWorkerOptions): UseToken
 
         worker.onerror = (error) => {
             console.error("Tokenizer worker error:", error);
-            setErrors([{ message: "Worker error: " + error.message, line: 0, column: 0 }]);
+            setErrors([{ message: `Worker error: ${error.message}`, line: 0, column: 0 }]);
             setIsTokenizing(false);
         };
 
@@ -150,10 +150,7 @@ export function useTokenizerWorker(options: UseTokenizerWorkerOptions): UseToken
     }, [sendTokenizeRequest]);
 
     // Compute line count directly during render (no lag from useEffect)
-    const actualLineCount = useMemo(
-        () => (content ? content.split("\n").length : 1),
-        [content],
-    );
+    const actualLineCount = useMemo(() => (content ? content.split("\n").length : 1), [content]);
 
     // Memoized highlighted lines with optimistic line count
     const highlightedLines = useMemo(() => {

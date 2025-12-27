@@ -125,10 +125,7 @@ export function useTokenizer(options: UseTokenizerOptions): UseTokenizerReturn {
     }, [performTokenization]);
 
     // Compute line count directly during render (no lag from useEffect)
-    const actualLineCount = useMemo(
-        () => (content ? content.split("\n").length : 1),
-        [content],
-    );
+    const actualLineCount = useMemo(() => (content ? content.split("\n").length : 1), [content]);
 
     // Memoized highlighted lines with optimistic line count
     const highlightedLines = useMemo(() => {
