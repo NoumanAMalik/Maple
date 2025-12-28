@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { PieceTable, type PieceTableSnapshot } from "@/lib/editor/pieceTable";
 import {
     type CursorPosition,
@@ -81,6 +81,31 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     const triggerUpdate = useCallback(() => {
         setVersion((v) => v + 1);
     }, []);
+
+    // Track previous initialContent to detect changes
+    const prevInitialContentRef = useRef(initialContent);
+
+    // Sync buffer when initialContent changes (e.g., tab switch)
+    // Only reset if initialContent changed AND differs from current buffer
+    // This distinguishes tab switches (buffer content differs) from keystrokes
+    // (buffer already has the same content from user typing)
+    useEffect(() => {
+        const currentContent = bufferRef.current.getText();
+        if (initialContent !== prevInitialContentRef.current && initialContent !== currentContent) {
+            // Tab switch: initialContent changed AND differs from buffer
+            bufferRef.current = new PieceTable(initialContent);
+            setCursorState({ line: 1, column: 1 });
+            setSelectionState(null);
+            setIsDirty(false);
+            undoStackRef.current = [];
+            redoStackRef.current = [];
+            prevInitialContentRef.current = initialContent;
+            triggerUpdate();
+        } else if (initialContent !== prevInitialContentRef.current) {
+            // Content matches buffer but ref is stale (keystroke case), just update ref
+            prevInitialContentRef.current = initialContent;
+        }
+    }, [initialContent, triggerUpdate]);
 
     // Helper to validate and clamp cursor position
     const clampCursor = useCallback((pos: CursorPosition): CursorPosition => {

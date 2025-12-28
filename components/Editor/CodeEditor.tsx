@@ -38,6 +38,7 @@ export function CodeEditor({
 }: CodeEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const prevCursorRef = useRef<{ line: number; column: number } | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isMouseDown, setIsMouseDown] = useState(false);
 
@@ -65,7 +66,14 @@ export function CodeEditor({
 
     // Scroll to keep cursor visible when it moves
     useEffect(() => {
-        scrollToPosition(editor.cursor.line, editor.cursor.column, coordinateConverter.charWidth);
+        const prev = prevCursorRef.current;
+        const curr = editor.cursor;
+
+        // Only scroll if cursor position actually changed
+        if (!prev || prev.line !== curr.line || prev.column !== curr.column) {
+            scrollToPosition(curr.line, curr.column, coordinateConverter.charWidth);
+            prevCursorRef.current = { line: curr.line, column: curr.column };
+        }
     }, [editor.cursor, scrollToPosition, coordinateConverter.charWidth]);
 
     // Handle scroll events

@@ -1,9 +1,11 @@
 export { ActivityBar } from "./ActivityBar";
 export { CodeEditor } from "./CodeEditor";
 export { CursorRenderer } from "./CursorRenderer";
+export { EditorPane } from "./EditorPane";
 export { Explorer } from "./Explorer";
 export { Gutter } from "./Gutter";
 export { HiddenTextarea } from "./HiddenTextarea";
 export { Line } from "./Line";
 export { LineRenderer } from "./LineRenderer";
 export { SelectionRenderer } from "./SelectionRenderer";
+export { TabBar } from "./TabBar";

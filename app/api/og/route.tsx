@@ -7,9 +7,9 @@ export async function GET() {
         new URL("../../../public/fonts/InstrumentSerif-Italic.ttf", import.meta.url),
     ).then((res) => res.arrayBuffer());
 
-    const geistSans = await fetch(
-        new URL("../../../public/fonts/Geist-Regular.ttf", import.meta.url),
-    ).then((res) => res.arrayBuffer());
+    const geistSans = await fetch(new URL("../../../public/fonts/Geist-Regular.ttf", import.meta.url)).then((res) =>
+        res.arrayBuffer(),
+    );
 
     return new ImageResponse(
         <div

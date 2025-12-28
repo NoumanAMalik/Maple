@@ -1,13 +1,16 @@
 import type { FileContent, FileNode } from "@/types/file";
 import type { FileSystemOperations } from "./types";
 import { IndexedDBStorage } from "./indexedDB";
+import { FILE_EXTENSIONS, type SupportedLanguage } from "@/utils/constants";
+
+const ROOT_ID = "root";
 
 /**
  * Virtual file system built on IndexedDB.
  * Provides high-level file operations for the editor.
  */
 export class FileSystem implements FileSystemOperations {
-    private storage: IndexedDBStorage;
+    public storage: IndexedDBStorage;
     private initialized = false;
 
     constructor() {
@@ -24,16 +27,129 @@ export class FileSystem implements FileSystemOperations {
         return crypto.randomUUID();
     }
 
+    /**
+     * Get language from file extension
+     */
+    getLanguageFromFileName(fileName: string): SupportedLanguage | null {
+        const lastDot = fileName.lastIndexOf(".");
+        if (lastDot === -1) return null;
+        const ext = fileName.substring(lastDot);
+        return FILE_EXTENSIONS[ext] || null;
+    }
+
+    /**
+     * Ensure root directory exists, create if not
+     */
+    async ensureRootDirectory(): Promise<FileNode> {
+        let root = await this.storage.get<FileNode>("files", ROOT_ID);
+
+        if (!root) {
+            const now = Date.now();
+            root = {
+                id: ROOT_ID,
+                name: "workspace",
+                type: "directory",
+                parentId: null,
+                path: "/",
+                createdAt: now,
+                updatedAt: now,
+            };
+            await this.storage.put("files", root);
+        }
+
+        return root;
+    }
+
+    /**
+     * Recursively delete directory and all children
+     */
+    async deleteDirectoryRecursive(id: string): Promise<void> {
+        const children = await this.listDirectory(id);
+
+        // Delete all children first (depth-first)
+        for (const child of children) {
+            if (child.type === "directory") {
+                await this.deleteDirectoryRecursive(child.id);
+            } else {
+                await this.deleteFile(child.id);
+            }
+        }
+
+        // Delete the directory itself
+        await this.storage.delete("files", id);
+    }
+
+    /**
+     * Move a node to a new parent
+     */
+    async moveNode(nodeId: string, newParentId: string): Promise<void> {
+        const node = await this.storage.get<FileNode>("files", nodeId);
+        if (!node) throw new Error(`Node not found: ${nodeId}`);
+
+        const newParent = await this.storage.get<FileNode>("files", newParentId);
+        if (!newParent || newParent.type !== "directory") {
+            throw new Error(`Invalid parent: ${newParentId}`);
+        }
+
+        // Calculate new path
+        const newPath = newParent.path === "/" ? `/${node.name}` : `${newParent.path}/${node.name}`;
+
+        // Check if a file with the same path already exists
+        const existingFile = await this.getFileByPath(newPath);
+        if (existingFile && existingFile.id !== nodeId) {
+            throw new Error(`A file named "${node.name}" already exists in this location`);
+        }
+
+        // Update path
+        const oldPath = node.path;
+        node.parentId = newParentId;
+        node.path = newPath;
+        node.updatedAt = Date.now();
+
+        await this.storage.put("files", node);
+
+        // If directory, recursively update children paths
+        if (node.type === "directory") {
+            await this.updateChildrenPaths(nodeId, oldPath, node.path);
+        }
+    }
+
+    /**
+     * Helper to recursively update children paths after move
+     */
+    private async updateChildrenPaths(parentId: string, oldParentPath: string, newParentPath: string): Promise<void> {
+        const children = await this.listDirectory(parentId);
+
+        for (const child of children) {
+            child.path = child.path.replace(oldParentPath, newParentPath);
+            child.updatedAt = Date.now();
+            await this.storage.put("files", child);
+
+            if (child.type === "directory") {
+                await this.updateChildrenPaths(child.id, oldParentPath, newParentPath);
+            }
+        }
+    }
+
     async createFile(parentId: string, name: string, content = ""): Promise<FileContent> {
         const now = Date.now();
+        const parent = await this.storage.get<FileNode>("files", parentId);
+        const path = parent?.path === "/" ? `/${name}` : `${parent?.path || ""}/${name}`;
+
+        // Check for duplicate path
+        const existingFile = await this.getFileByPath(path);
+        if (existingFile) {
+            throw new Error(`A file named "${name}" already exists in this location`);
+        }
+
         const file: FileContent = {
             id: this.generateId(),
             name,
             type: "file",
             parentId,
-            path: `${parentId}/${name}`, // Simplified path
+            path,
             content,
-            language: null,
+            language: this.getLanguageFromFileName(name),
             createdAt: now,
             updatedAt: now,
         };
@@ -71,12 +187,21 @@ export class FileSystem implements FileSystemOperations {
 
     async createDirectory(parentId: string, name: string): Promise<FileNode> {
         const now = Date.now();
+        const parent = await this.storage.get<FileNode>("files", parentId);
+        const path = parent?.path === "/" ? `/${name}` : `${parent?.path || ""}/${name}`;
+
+        // Check for duplicate path
+        const existingFile = await this.getFileByPath(path);
+        if (existingFile) {
+            throw new Error(`A folder named "${name}" already exists in this location`);
+        }
+
         const dir: FileNode = {
             id: this.generateId(),
             name,
             type: "directory",
             parentId,
-            path: `${parentId}/${name}`,
+            path,
             createdAt: now,
             updatedAt: now,
         };
@@ -86,8 +211,7 @@ export class FileSystem implements FileSystemOperations {
     }
 
     async deleteDirectory(id: string): Promise<void> {
-        // TODO: Recursively delete children
-        await this.storage.delete("files", id);
+        await this.deleteDirectoryRecursive(id);
     }
 
     async listDirectory(id: string): Promise<FileNode[]> {
