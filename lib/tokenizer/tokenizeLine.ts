@@ -1,5 +1,12 @@
 import type { LanguageId, LineState, TokenizeLineResult } from "./types";
-import { javascriptTokenizer } from "./languages";
+import {
+    javascriptTokenizer,
+    jsonTokenizer,
+    cssTokenizer,
+    htmlTokenizer,
+    pythonTokenizer,
+    markdownTokenizer,
+} from "./languages";
 
 const INITIAL_STATE: LineState = {
     kind: "normal",
@@ -9,6 +16,11 @@ const INITIAL_STATE: LineState = {
 const tokenizers = {
     javascript: javascriptTokenizer,
     typescript: javascriptTokenizer,
+    css: cssTokenizer,
+    json: jsonTokenizer,
+    html: htmlTokenizer,
+    python: pythonTokenizer,
+    markdown: markdownTokenizer,
     plaintext: {
         languageId: "plaintext" as const,
         initialState: INITIAL_STATE,
@@ -44,6 +56,21 @@ export function getLanguageFromFilename(filename: string): LanguageId {
         case "mts":
         case "cts":
             return "typescript";
+        case "css":
+        case "scss":
+            return "css";
+        case "json":
+            return "json";
+        case "html":
+        case "htm":
+            return "html";
+        case "md":
+        case "markdown":
+            return "markdown";
+        case "py":
+        case "pyw":
+        case "pyi":
+            return "python";
         default:
             return "plaintext";
     }

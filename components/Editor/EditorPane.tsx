@@ -2,15 +2,23 @@
 
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { CodeEditor } from "./CodeEditor";
+import { FindReplace } from "./FindReplace";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { CursorPosition } from "@/types/editor";
 
 interface EditorPaneProps {
     tabId: string;
     onCursorChange?: (position: CursorPosition) => void;
+    showFindReplace?: boolean;
+    onCloseFindReplace?: () => void;
 }
 
-export const EditorPane = memo(function EditorPane({ tabId, onCursorChange }: EditorPaneProps) {
+export const EditorPane = memo(function EditorPane({
+    tabId,
+    onCursorChange,
+    showFindReplace = false,
+    onCloseFindReplace,
+}: EditorPaneProps) {
     const { state, dispatch, getFileSystem, saveFile } = useWorkspace();
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +108,23 @@ export const EditorPane = memo(function EditorPane({ tabId, onCursorChange }: Ed
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [handleSave]);
 
+    // Handle replace from FindReplace
+    const handleReplaceContent = useCallback(
+        (newContent: string) => {
+            setContent(newContent);
+            handleContentChange(newContent);
+        },
+        [handleContentChange],
+    );
+
+    // Handle navigation to match (just updates cursor for now)
+    const handleNavigateToMatch = useCallback(
+        (line: number, column: number) => {
+            onCursorChange?.({ line, column });
+        },
+        [onCursorChange],
+    );
+
     if (!tab) {
         return (
             <div className="flex h-full items-center justify-center text-[var(--editor-line-number)]">
@@ -115,6 +140,22 @@ export const EditorPane = memo(function EditorPane({ tabId, onCursorChange }: Ed
     }
 
     return (
-        <CodeEditor initialContent={content} onChange={handleContentChange} onCursorChange={onCursorChange} autoFocus />
+        <div className="relative h-full w-full">
+            <CodeEditor
+                initialContent={content}
+                onChange={handleContentChange}
+                onCursorChange={onCursorChange}
+                autoFocus
+            />
+            {showFindReplace && onCloseFindReplace && (
+                <FindReplace
+                    isOpen={showFindReplace}
+                    onClose={onCloseFindReplace}
+                    content={content}
+                    onReplace={handleReplaceContent}
+                    onNavigateToMatch={handleNavigateToMatch}
+                />
+            )}
+        </div>
     );
 });

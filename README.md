@@ -187,62 +187,178 @@ This project uses:
   - Built-in types and utilities
   - Function and class detection
 
-- [x] **Incremental Tokenization** (`lib/tokenizer/lineCache.ts`)
-  - Line-level caching
-  - Change detection (only re-tokenize modified lines)
-  - Context propagation for multi-line tokens
-  - Cache invalidation on context change
-
 - [x] **Syntax Highlighting** (`lib/highlighting/`)
   - Token-to-CSS class mapping
   - React element generation
   - Memoized line renderer
   - Bearded Theme Black & Gold colors
 
-- [x] **Editor Integration**
-  - `useTokenizer` hook with debouncing (300ms)
-  - Overlay technique (transparent textarea + highlighted code layer)
-  - Status bar with cursor position
+- [x] **PieceTable Text Buffer** (`lib/editor/pieceTable.ts`)
+  - Efficient data structure for text editing (used by VS Code)
+  - Two buffers: original (immutable) and add (append-only)
+  - O(1) append for typing
+  - Snapshot-based undo/redo
+  - Line cache with binary search for O(log n) line access
 
-- [x] **IndexedDB Storage** (`lib/storage/`)
-  - Database wrapper
-  - Virtual file system with CRUD operations
+- [x] **Cursor & Selection System**
+  - Full cursor positioning and navigation
+  - Multi-line selection with visual highlighting
+  - Shift+Click to extend selection
+  - Forward and backward selection support
+  - Cursor blinking animation (530ms)
+  - Auto-scroll to keep cursor visible
+
+- [x] **Text Editing Operations**
+  - Insert, delete, backspace
+  - Tab insertion (configurable spaces)
+  - Word-by-word deletion (Alt+Backspace/Delete)
+  - Delete to line start/end (Cmd+Backspace/Delete)
+  - Select all (Cmd+A)
+
+- [x] **Undo/Redo System** (`hooks/useEditorState.ts`)
+  - Command-based history with stacks
+  - Batch editing within 300ms window
+  - Max 1000 history entries
+  - Full state snapshots using PieceTable
+
+- [x] **Clipboard Integration**
+  - Copy (Cmd+C), Cut (Cmd+X), Paste (Cmd+V)
+  - Native clipboard API support
+  - IME (Input Method Editor) support for international text
+
+- [x] **Virtual Scrolling** (`hooks/useViewport.ts`)
+  - Only renders visible lines + buffer
+  - Efficient for large files (10k+ lines)
+  - ResizeObserver for viewport changes
+  - Horizontal and vertical scrolling
+
+- [x] **IndexedDB File System** (`lib/storage/`)
+  - Create, read, update, delete files
+  - Create and delete directories
+  - Rename and move nodes
+  - Hierarchical file tree structure
+  - Auto language detection from extension
+
+- [x] **Tab Bar** (`components/Editor/TabBar.tsx`)
+  - Drag-and-drop tab reordering
+  - Close button with unsaved changes indicator (•)
+  - Visual indicator for active tab
+  - Horizontal scrolling for many tabs
+
+- [x] **Explorer/File Tree** (`components/Editor/Explorer.tsx`)
+  - Collapsible/expandable directories
+  - File and folder icons (lucide-react)
+  - Drag-and-drop file organization
+  - Context menu (rename, delete)
+  - Inline rename with Enter/Escape
+  - Sorted alphabetically (directories first)
+
+- [x] **Activity Bar** (`components/Editor/ActivityBar.tsx`)
+  - Explorer toggle button
+  - Keyboard shortcuts modal
+  - Tooltip support
+
+- [x] **Welcome Screen** (`components/Editor/WelcomeScreen.tsx`)
+  - Animated welcome interface
+  - "Create New File" call-to-action
+  - Feature cards highlighting capabilities
+  - Keyboard shortcuts quick reference
+
+- [x] **Status Bar**
+  - Current line and column position
+  - File name display
+  - Language mode indicator
+  - UTF-8 encoding
+
+- [x] **Line Numbers/Gutter** (`components/Editor/Gutter.tsx`)
+  - Fixed 60px width
+  - Current line highlighting
+  - Virtual scrolling optimization
+
+- [x] **Keyboard Shortcuts** (comprehensive)
+  - Navigation: Arrow keys, Cmd+Arrow, Alt+Arrow, Home/End
+  - Editing: Cmd+Z/Y, Cmd+S, Cmd+A, Tab
+  - Deletion: Backspace, Delete, word/line deletion
+  - Application: Cmd+B (explorer), Cmd+N (new file)
+
+- [x] **UI Components**
+  - Tooltip component
+  - Modal component
+  - Toast component
+  - CSS variable theming system
+
+- [x] **Additional Language Support**
+  - CSS tokenizer (selectors, at-rules, colors, units)
+  - HTML tokenizer (tags, attributes, entities, comments)
+  - JSON tokenizer (property keys, values, structural)
+  - Markdown tokenizer (headings, bold/italic, code blocks, links)
+  - Python tokenizer (keywords, decorators, triple-quoted strings)
+
+- [x] **Find & Replace** (`components/Editor/FindReplace.tsx`)
+  - Find input with match count display
+  - Replace input with Replace/Replace All buttons
+  - Previous/Next navigation (Enter/Shift+Enter)
+  - Case sensitivity toggle
+  - Regex toggle
+  - Keyboard shortcuts: Cmd+F (find), Cmd+H (replace), Escape (close)
+
+- [x] **Command Palette** (`components/Editor/CommandPalette.tsx`)
+  - Fuzzy search input
+  - Categorized command list (File, Edit, View)
+  - Keyboard navigation (Arrow Up/Down, Enter to execute)
+  - Show keyboard shortcuts next to commands
+  - Keyboard shortcuts: Cmd+Shift+P, Cmd+K
 
 ### Remaining
 
-- [ ] **Additional Language Support**
-  - CSS tokenizer
-  - HTML tokenizer (with embedded JS/CSS)
-  - JSON tokenizer
-  - Markdown tokenizer
-  - Python tokenizer
-
 - [ ] **Editor Features**
-  - Cursor position tracking from textarea events
-  - Selection highlighting
-  - Line highlighting (active line)
-  - Line numbers click to select
   - Auto-indent on Enter
-  - Tab handling (insert spaces)
-  - Undo/Redo integration with browser
+  - Smart bracket insertion
+  - Line highlighting (active line background)
+  - Line numbers click to select entire line
 
-- [ ] **UI Components**
-  - File tree sidebar
-  - Tab bar with close buttons
-  - Command palette (Cmd/Ctrl+Shift+P)
-  - Find and replace
+- [ ] **Search & Navigation**
+  - Go to line (Cmd+G)
+  - File picker/quick open (Cmd+P)
 
 - [ ] **Advanced Features**
   - Bracket matching and highlighting
   - Code folding
   - Minimap
-  - Auto-save to IndexedDB
-  - File open/save dialogs
+  - Multi-cursor editing
+  - Auto-complete/IntelliSense
+  - Word wrap (toggle exists but not functional)
 
 - [ ] **Performance Optimizations**
-  - Web Worker for files >1000 lines
-  - Virtual scrolling for 10k+ line files
-  - Viewport-only tokenization
+  - Web Worker tokenization for files >1000 lines
+  - Incremental tokenization (only re-tokenize changed lines)
+
+## Future Feature Ideas
+
+### Collaboration & Integration
+- Collaborative editing (WebRTC/CRDTs)
+- Git integration (diff viewer, blame, commit history)
+- AI assistant panel
+- Terminal emulator
+
+### Editor Enhancements
+- Split editor panes (horizontal/vertical)
+- Snippets system with templating
+- Zen/distraction-free mode
+- Custom themes with live preview editor
+- Multiple color schemes
+
+### Export & Import
+- Export to HTML/PDF
+- Export as image (code screenshot)
+- Import from URL/GitHub gist
+
+### Additional Languages
+- Rust tokenizer
+- Go tokenizer
+- SQL tokenizer
+- YAML/TOML tokenizer
+- Shell script tokenizer
 
 ## Theme Colors (Bearded Theme Black & Gold)
 

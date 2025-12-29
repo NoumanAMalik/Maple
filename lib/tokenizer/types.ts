@@ -1,5 +1,5 @@
 // Language support
-export type LanguageId = "javascript" | "typescript" | "plaintext";
+export type LanguageId = "javascript" | "typescript" | "css" | "json" | "html" | "markdown" | "python" | "plaintext";
 
 // Token categories
 export type TokenType =
@@ -31,7 +31,7 @@ export interface Token {
 }
 
 // Multi-line state machine
-export type LineStateKind = "normal" | "block-comment" | "template-string";
+export type LineStateKind = "normal" | "block-comment" | "template-string" | "triple-string";
 
 export interface LineState {
     kind: LineStateKind;
