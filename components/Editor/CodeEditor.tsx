@@ -10,6 +10,7 @@ import { SelectionRenderer } from "./SelectionRenderer";
 import { HiddenTextarea } from "./HiddenTextarea";
 import { createCoordinateConverter, pixelToPosition } from "@/lib/editor/coordinates";
 import type { EditorConfig, CursorPosition } from "@/types/editor";
+import type { SearchMatch } from "@/lib/search/findInDocument";
 
 interface CodeEditorProps {
     /** Initial content to display */
@@ -22,6 +23,10 @@ interface CodeEditorProps {
     config?: Partial<EditorConfig>;
     /** Whether the editor should auto-focus */
     autoFocus?: boolean;
+    /** Search matches to highlight */
+    searchMatches?: SearchMatch[];
+    /** Current match index for highlighting */
+    currentMatchIndex?: number;
 }
 
 /**
@@ -35,6 +40,8 @@ export function CodeEditor({
     onCursorChange,
     config: configOverrides,
     autoFocus = true,
+    searchMatches,
+    currentMatchIndex,
 }: CodeEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -287,6 +294,8 @@ export function CodeEditor({
                             cursor={editor.cursor}
                             config={editor.config}
                             version={editor.version}
+                            searchMatches={searchMatches}
+                            currentMatchIndex={currentMatchIndex}
                         />
 
                         {/* Cursor */}

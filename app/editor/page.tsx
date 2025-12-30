@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ActivityBar, Explorer, TabBar, EditorPane, WelcomeScreen, CommandPalette } from "@/components/Editor";
+import {
+    ActivityBar,
+    Explorer,
+    TabBar,
+    EditorPane,
+    WelcomeScreen,
+    CommandPalette,
+    FindReplaceSidebar,
+} from "@/components/Editor";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { registerDefaultCommands } from "@/lib/commands/defaultCommands";
+import { useFindReplace } from "@/hooks/useFindReplace";
 import type { CursorPosition } from "@/types/editor";
 
 // Helper to get all file names at root level
@@ -26,14 +35,39 @@ function generateUniqueFileName(existingNames: Set<string>, baseName = "untitled
 }
 
 function EditorContent() {
-    const { state, createFile, closeTab } = useWorkspace();
+    const { state, createFile, closeTab, dispatch } = useWorkspace();
     const [isExplorerOpen, setIsExplorerOpen] = useState(true);
+    const [isSearchSidebarOpen, setIsSearchSidebarOpen] = useState(false);
     const [cursorPosition, setCursorPosition] = useState<CursorPosition>({ line: 1, column: 1 });
     const [showFindReplace, setShowFindReplace] = useState(false);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
 
+    // Get active tab content for find/replace
+    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
+    const [activeContent, setActiveContent] = useState("");
+
+    // Update active content when tab changes
+    useEffect(() => {
+        if (activeTab?.unsavedContent !== undefined) {
+            setActiveContent(activeTab.unsavedContent);
+        } else {
+            // Will be loaded by EditorPane
+            setActiveContent("");
+        }
+    }, [activeTab?.id, activeTab?.unsavedContent]);
+
+    // Use find/replace hook at EditorContent level for sidebar
+    const findReplaceHook = useFindReplace({
+        content: activeContent,
+        isOpen: isSearchSidebarOpen,
+    });
+
     const toggleExplorer = useCallback(() => {
         setIsExplorerOpen((prev) => !prev);
+    }, []);
+
+    const toggleSearchSidebar = useCallback(() => {
+        setIsSearchSidebarOpen((prev) => !prev);
     }, []);
 
     const handleCursorChange = useCallback((position: CursorPosition) => {
@@ -80,8 +114,34 @@ function EditorContent() {
         setShowFindReplace(false);
     }, []);
 
+    const closeSearchSidebar = useCallback(() => {
+        setIsSearchSidebarOpen(false);
+    }, []);
+
+    // Handle replace from sidebar
+    const handleSidebarReplace = useCallback(
+        (newContent: string) => {
+            if (activeTab) {
+                // Update the tab content
+                dispatch({
+                    type: "UPDATE_TAB_CONTENT",
+                    payload: { tabId: activeTab.id, content: newContent },
+                });
+                setActiveContent(newContent);
+            }
+        },
+        [activeTab, dispatch],
+    );
+
+    // Handle navigate to match from sidebar
+    const handleNavigateToMatch = useCallback((line: number, column: number) => {
+        setCursorPosition({ line, column });
+        // Focus will be handled by CodeEditor
+    }, []);
+
     // Register default commands
     useEffect(() => {
+        console.log("[EditorPage] Registering default commands - useEffect triggered");
         registerDefaultCommands({
             createFile: createNewFile,
             saveFile,
@@ -91,28 +151,40 @@ function EditorContent() {
             selectAll,
             undo,
             redo,
+            toggleSearch: toggleSearchSidebar,
         });
-    }, [createNewFile, saveFile, closeActiveTab, toggleExplorer, openFindReplace, selectAll, undo, redo]);
+    }, [
+        createNewFile,
+        saveFile,
+        closeActiveTab,
+        toggleExplorer,
+        openFindReplace,
+        selectAll,
+        undo,
+        redo,
+        toggleSearchSidebar,
+    ]);
 
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Cmd+Shift+P or Cmd+K for command palette
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "P") {
-                e.preventDefault();
-                setShowCommandPalette(true);
-                return;
-            }
+            // Cmd+K for command palette
             if ((e.metaKey || e.ctrlKey) && e.key === "k") {
                 e.preventDefault();
+                console.log("[EditorPage] Cmd+K pressed - opening command palette");
                 setShowCommandPalette(true);
                 return;
             }
 
-            // Cmd+B / Ctrl+B to toggle sidebar
+            // Cmd+B / Ctrl+B to toggle Explorer sidebar
             if ((e.metaKey || e.ctrlKey) && e.key === "b") {
                 e.preventDefault();
                 toggleExplorer();
+            }
+            // Cmd+Shift+F / Ctrl+Shift+F to toggle Search sidebar
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
+                e.preventDefault();
+                toggleSearchSidebar();
             }
             // Cmd+N / Ctrl+N to create new file
             if ((e.metaKey || e.ctrlKey) && e.key === "n") {
@@ -145,9 +217,15 @@ function EditorContent() {
         // Use capture phase to intercept before browser handles it
         window.addEventListener("keydown", handleKeyDown, true);
         return () => window.removeEventListener("keydown", handleKeyDown, true);
-    }, [toggleExplorer, createNewFile, closeTab, state.activeTabId, showFindReplace, showCommandPalette]);
-
-    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
+    }, [
+        toggleExplorer,
+        toggleSearchSidebar,
+        createNewFile,
+        closeTab,
+        state.activeTabId,
+        showFindReplace,
+        showCommandPalette,
+    ]);
 
     return (
         <div className="flex h-screen w-full flex-col bg-[var(--editor-bg)]">
@@ -164,14 +242,32 @@ function EditorContent() {
                             onCursorChange={handleCursorChange}
                             showFindReplace={showFindReplace}
                             onCloseFindReplace={closeFindReplace}
+                            onContentChange={setActiveContent}
                         />
                     ) : (
                         <WelcomeScreen />
                     )}
                 </div>
 
+                {/* Search Sidebar */}
+                {isSearchSidebarOpen && state.activeTabId && (
+                    <FindReplaceSidebar
+                        isOpen={isSearchSidebarOpen}
+                        onClose={closeSearchSidebar}
+                        onNavigateToMatch={handleNavigateToMatch}
+                        onReplace={handleSidebarReplace}
+                        content={activeContent}
+                        {...findReplaceHook}
+                    />
+                )}
+
                 <Explorer isOpen={isExplorerOpen} />
-                <ActivityBar isExplorerOpen={isExplorerOpen} onToggleExplorer={toggleExplorer} />
+                <ActivityBar
+                    isExplorerOpen={isExplorerOpen}
+                    onToggleExplorer={toggleExplorer}
+                    isSearchOpen={isSearchSidebarOpen}
+                    onToggleSearch={toggleSearchSidebar}
+                />
             </div>
 
             {/* Status Bar */}

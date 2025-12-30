@@ -28,11 +28,17 @@ import {
     ArrowLeft,
     ArrowRight,
     ArrowDown,
+    Search as SearchIcon,
+    Replace,
+    ChevronUp,
+    ChevronDown,
 } from "lucide-react";
 
 interface ActivityBarProps {
     isExplorerOpen: boolean;
     onToggleExplorer: () => void;
+    isSearchOpen: boolean;
+    onToggleSearch: () => void;
 }
 
 interface ShortcutCategory {
@@ -45,6 +51,51 @@ interface ShortcutCategory {
 }
 
 const shortcutCategories: ShortcutCategory[] = [
+    {
+        title: "Search",
+        shortcuts: [
+            {
+                keys: ["Cmd/Ctrl", "K"],
+                action: "Command Palette",
+                icon: <Command className="h-4 w-4" />,
+            },
+            {
+                keys: ["Cmd/Ctrl", "F"],
+                action: "Find",
+                icon: <SearchIcon className="h-4 w-4" />,
+            },
+            {
+                keys: ["Cmd/Ctrl", "H"],
+                action: "Find & Replace",
+                icon: <Replace className="h-4 w-4" />,
+            },
+            {
+                keys: ["Cmd/Ctrl", "Shift", "F"],
+                action: "Search in Sidebar",
+                icon: <SearchIcon className="h-4 w-4" />,
+            },
+            {
+                keys: ["Enter"],
+                action: "Next match",
+                icon: <ChevronDown className="h-4 w-4" />,
+            },
+            {
+                keys: ["Shift", "Enter"],
+                action: "Previous match",
+                icon: <ChevronUp className="h-4 w-4" />,
+            },
+            {
+                keys: ["Arrow Down"],
+                action: "Next match",
+                icon: <ArrowDown className="h-4 w-4" />,
+            },
+            {
+                keys: ["Arrow Up"],
+                action: "Previous match",
+                icon: <ArrowUp className="h-4 w-4" />,
+            },
+        ],
+    },
     {
         title: "Editing",
         shortcuts: [
@@ -335,12 +386,30 @@ function getKeyIcon(key: string): React.ReactNode {
     return <span>{key}</span>;
 }
 
-export function ActivityBar({ isExplorerOpen, onToggleExplorer }: ActivityBarProps) {
+export function ActivityBar({ isExplorerOpen, onToggleExplorer, isSearchOpen, onToggleSearch }: ActivityBarProps) {
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     return (
         <>
             <div className="flex h-full w-14 flex-col items-center gap-4 border-l border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] py-4">
+                <Tooltip content="Search" side="left">
+                    <button
+                        type="button"
+                        onClick={onToggleSearch}
+                        aria-label="Toggle Search"
+                        aria-pressed={isSearchOpen}
+                        className={cn(
+                            "relative flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]",
+                            isSearchOpen && "bg-[var(--ui-hover)]",
+                        )}
+                    >
+                        {isSearchOpen && (
+                            <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
+                        )}
+                        <SearchIcon className="h-5 w-5" />
+                    </button>
+                </Tooltip>
+
                 <Tooltip content="Explorer" side="left">
                     <button
                         type="button"

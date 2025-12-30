@@ -5,6 +5,7 @@ export { CursorRenderer } from "./CursorRenderer";
 export { EditorPane } from "./EditorPane";
 export { Explorer } from "./Explorer";
 export { FindReplace } from "./FindReplace";
+export { FindReplaceSidebar } from "./FindReplaceSidebar";
 export { Gutter } from "./Gutter";
 export { HiddenTextarea } from "./HiddenTextarea";
 export { Line } from "./Line";

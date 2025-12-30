@@ -1,39 +1,60 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useFindReplace } from "@/hooks/useFindReplace";
+import { ChevronUp, ChevronDown, X, Search, Replace } from "lucide-react";
+import type { SearchMatch } from "@/lib/search/findInDocument";
 
 interface FindReplaceProps {
     isOpen: boolean;
     onClose: () => void;
-    content: string;
     onReplace: (newContent: string) => void;
     onNavigateToMatch: (line: number, column: number, length: number) => void;
+    // All useFindReplace return values as props
+    findQuery: string;
+    setFindQuery: (query: string) => void;
+    replaceQuery: string;
+    setReplaceQuery: (query: string) => void;
+    matches: SearchMatch[];
+    currentMatchIndex: number;
+    caseSensitive: boolean;
+    toggleCaseSensitive: () => void;
+    useRegex: boolean;
+    toggleUseRegex: () => void;
+    showReplace: boolean;
+    toggleShowReplace: () => void;
+    findNext: () => void;
+    findPrevious: () => void;
+    replaceCurrent: () => string | null;
+    replaceAll: () => string | null;
+    hasMatches: boolean;
+    matchCount: number;
 }
 
-export function FindReplace({ isOpen, onClose, content, onReplace, onNavigateToMatch }: FindReplaceProps) {
+export function FindReplace({
+    isOpen,
+    onClose,
+    onReplace,
+    onNavigateToMatch,
+    findQuery,
+    setFindQuery,
+    replaceQuery,
+    setReplaceQuery,
+    matches,
+    currentMatchIndex,
+    caseSensitive,
+    toggleCaseSensitive,
+    useRegex,
+    toggleUseRegex,
+    showReplace,
+    toggleShowReplace,
+    findNext,
+    findPrevious,
+    replaceCurrent,
+    replaceAll,
+    hasMatches,
+    matchCount,
+}: FindReplaceProps) {
     const findInputRef = useRef<HTMLInputElement>(null);
-
-    const {
-        findQuery,
-        setFindQuery,
-        replaceQuery,
-        setReplaceQuery,
-        matches,
-        currentMatchIndex,
-        caseSensitive,
-        toggleCaseSensitive,
-        useRegex,
-        toggleUseRegex,
-        showReplace,
-        toggleShowReplace,
-        findNext,
-        findPrevious,
-        replaceCurrent,
-        replaceAll,
-        hasMatches,
-        matchCount,
-    } = useFindReplace({ content, isOpen });
 
     // Focus input when opened
     useEffect(() => {
@@ -68,22 +89,34 @@ export function FindReplace({ isOpen, onClose, content, onReplace, onNavigateToM
     // Keyboard handling
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
-            if (e.key === "Escape") {
-                onClose();
-            } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (e.shiftKey) {
-                    findPrevious();
-                } else {
+            switch (e.key) {
+                case "Escape":
+                    onClose();
+                    break;
+                case "ArrowDown":
+                    e.preventDefault();
                     findNext();
-                }
-            } else if (e.key === "F3") {
-                e.preventDefault();
-                if (e.shiftKey) {
+                    break;
+                case "ArrowUp":
+                    e.preventDefault();
                     findPrevious();
-                } else {
-                    findNext();
-                }
+                    break;
+                case "Enter":
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        findPrevious();
+                    } else {
+                        findNext();
+                    }
+                    break;
+                case "F3":
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        findPrevious();
+                    } else {
+                        findNext();
+                    }
+                    break;
             }
         },
         [onClose, findNext, findPrevious],
@@ -92,18 +125,21 @@ export function FindReplace({ isOpen, onClose, content, onReplace, onNavigateToM
     if (!isOpen) return null;
 
     return (
-        <div className="absolute top-2 right-2 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl">
+        <div className="absolute top-2 right-2 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl animate-slideInFromTopRight">
             {/* Find input row */}
             <div className="flex items-center gap-2">
-                <input
-                    ref={findInputRef}
-                    type="text"
-                    value={findQuery}
-                    onChange={(e) => setFindQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Find"
-                    className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
-                />
+                <div className="flex flex-1 items-center gap-2">
+                    <Search className="h-4 w-4 text-[var(--editor-line-number)]" />
+                    <input
+                        ref={findInputRef}
+                        type="text"
+                        value={findQuery}
+                        onChange={(e) => setFindQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Find"
+                        className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
+                    />
+                </div>
                 <span className="text-xs text-[var(--editor-line-number)] whitespace-nowrap">
                     {hasMatches ? `${currentMatchIndex + 1}/${matchCount}` : "No results"}
                 </span>
@@ -147,14 +183,17 @@ export function FindReplace({ isOpen, onClose, content, onReplace, onNavigateToM
             {/* Replace row (conditional) */}
             {showReplace && (
                 <div className="mt-2 flex items-center gap-2">
-                    <input
-                        type="text"
-                        value={replaceQuery}
-                        onChange={(e) => setReplaceQuery(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Replace"
-                        className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
-                    />
+                    <div className="flex flex-1 items-center gap-2">
+                        <Replace className="h-4 w-4 text-[var(--editor-line-number)]" />
+                        <input
+                            type="text"
+                            value={replaceQuery}
+                            onChange={(e) => setReplaceQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Replace"
+                            className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={handleReplace}
@@ -177,36 +216,43 @@ export function FindReplace({ isOpen, onClose, content, onReplace, onNavigateToM
             )}
 
             {/* Navigation buttons */}
-            <div className="mt-2 flex justify-end gap-2">
+            <div className="mt-3 flex justify-end gap-2">
                 <button
                     type="button"
                     onClick={findPrevious}
                     disabled={!hasMatches}
-                    className="rounded p-1 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center rounded h-7 w-7 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     aria-label="Previous match"
                     title="Previous match (Shift+Enter)"
                 >
-                    ↑
+                    <ChevronUp className="h-4 w-4" />
                 </button>
                 <button
                     type="button"
                     onClick={findNext}
                     disabled={!hasMatches}
-                    className="rounded p-1 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center rounded h-7 w-7 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     aria-label="Next match"
                     title="Next match (Enter)"
                 >
-                    ↓
+                    <ChevronDown className="h-4 w-4" />
                 </button>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="rounded p-1 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] transition-colors"
+                    className="flex items-center justify-center rounded h-7 w-7 text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] transition-colors"
                     aria-label="Close"
                     title="Close (Escape)"
                 >
-                    ✕
+                    <X className="h-4 w-4" />
                 </button>
+            </div>
+
+            {/* Keyboard hints */}
+            <div className="mt-2 pt-2 border-t border-[var(--ui-border)]">
+                <p className="text-xs text-[var(--editor-line-number)]">
+                    Enter/↓ next • Shift+Enter/↑ prev • Esc close
+                </p>
             </div>
         </div>
     );

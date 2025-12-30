@@ -12,30 +12,89 @@ interface LineProps {
     isCurrent: boolean;
     config: EditorConfig;
     tokens?: Token[];
+    matches?: Array<{ column: number; length: number; isCurrent: boolean }>;
 }
 
-function renderWithTokens(content: string, tokens: Token[]): ReactNode {
-    if (tokens.length === 0) {
-        return content || "\u00A0";
+function renderWithTokens(
+    content: string,
+    tokens: Token[],
+    matches?: Array<{ column: number; length: number; isCurrent: boolean }>,
+): ReactNode {
+    if (!content) {
+        return "\u00A0";
     }
 
+    // If no tokens and no matches, return plain content
+    if (tokens.length === 0 && (!matches || matches.length === 0)) {
+        return content;
+    }
+
+    // Create a map of character positions to their properties
+    const charData: Array<{
+        char: string;
+        color?: string;
+        matchType?: "regular" | "current";
+    }> = [];
+
+    for (let i = 0; i < content.length; i++) {
+        charData.push({ char: content[i] });
+    }
+
+    // Apply token colors
+    for (const token of tokens) {
+        const color = getTokenColor(token.type);
+        if (color) {
+            const end = Math.min(token.start + token.length, content.length);
+            for (let i = token.start; i < end; i++) {
+                charData[i].color = color;
+            }
+        }
+    }
+
+    // Apply match highlights (column is 1-indexed, convert to 0-indexed)
+    if (matches) {
+        for (const match of matches) {
+            const start = match.column - 1;
+            const end = Math.min(start + match.length, content.length);
+            const matchType = match.isCurrent ? "current" : "regular";
+            for (let i = start; i < end; i++) {
+                charData[i].matchType = matchType;
+            }
+        }
+    }
+
+    // Build segments by grouping consecutive characters with same styling
     const segments: ReactNode[] = [];
-    let lastEnd = 0;
+    let i = 0;
+    let segmentKey = 0;
 
-    for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        const tokenEnd = token.start + token.length;
+    while (i < charData.length) {
+        const current = charData[i];
+        let j = i + 1;
 
-        if (token.start > lastEnd) {
-            segments.push(content.slice(lastEnd, token.start));
+        // Find consecutive characters with same color and matchType
+        while (
+            j < charData.length &&
+            charData[j].color === current.color &&
+            charData[j].matchType === current.matchType
+        ) {
+            j++;
         }
 
-        const text = content.slice(token.start, tokenEnd);
-        const color = getTokenColor(token.type);
+        const text = content.slice(i, j);
+        const style: React.CSSProperties = {};
 
-        if (color) {
+        if (current.color) {
+            style.color = current.color;
+        }
+
+        if (current.matchType) {
+            style.backgroundColor = current.matchType === "current" ? "var(--match-current)" : "var(--match-highlight)";
+        }
+
+        if (Object.keys(style).length > 0) {
             segments.push(
-                <span key={i} style={{ color }}>
+                <span key={segmentKey++} style={style}>
                     {text}
                 </span>,
             );
@@ -43,24 +102,20 @@ function renderWithTokens(content: string, tokens: Token[]): ReactNode {
             segments.push(text);
         }
 
-        lastEnd = tokenEnd;
-    }
-
-    if (lastEnd < content.length) {
-        segments.push(content.slice(lastEnd));
+        i = j;
     }
 
     return segments.length > 0 ? segments : "\u00A0";
 }
 
-export const Line = memo(function Line({ lineNumber, content, isCurrent, config, tokens }: LineProps) {
+export const Line = memo(function Line({ lineNumber, content, isCurrent, config, tokens, matches }: LineProps) {
     const rendered = useMemo(() => {
         if (tokens) {
-            return renderWithTokens(content, tokens);
+            return renderWithTokens(content, tokens, matches);
         }
         const { tokens: computedTokens } = tokenizeSingleLine(config.language, content);
-        return renderWithTokens(content, computedTokens);
-    }, [content, config.language, tokens]);
+        return renderWithTokens(content, computedTokens, matches);
+    }, [content, config.language, tokens, matches]);
 
     return (
         <div

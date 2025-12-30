@@ -1,24 +1,93 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { commandRegistry, type Command } from "@/lib/commands/registry";
+import { useCommands, type Command } from "@/lib/commands/registry";
 
 interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+function fuzzyMatch(text: string, query: string): boolean {
+    let queryIndex = 0;
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+
+    for (let i = 0; i < lowerText.length && queryIndex < lowerQuery.length; i++) {
+        if (lowerText[i] === lowerQuery[queryIndex]) {
+            queryIndex++;
+        }
+    }
+
+    return queryIndex === lowerQuery.length;
+}
+
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     const [query, setQuery] = useState("");
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const wasOpenRef = useRef(false);
+    const closingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Get filtered commands
+    // Subscribe to command registry changes
+    const allCommands = useCommands();
+
+    // Handle opening the palette
+    useEffect(() => {
+        if (isOpen && !wasOpenRef.current) {
+            // Cancel any ongoing closing animation
+            if (closingTimerRef.current) {
+                clearTimeout(closingTimerRef.current);
+                closingTimerRef.current = null;
+            }
+            // Opening: reset state and render immediately
+            setQuery("");
+            setSelectedIndex(0);
+            setIsClosing(false);
+            setShouldRender(true);
+        }
+        wasOpenRef.current = isOpen;
+    }, [isOpen]);
+
+    // Handle closing the palette with animation
+    useEffect(() => {
+        if (!isOpen && shouldRender && !closingTimerRef.current) {
+            // Start closing animation
+            setIsClosing(true);
+            closingTimerRef.current = setTimeout(() => {
+                setShouldRender(false);
+                setIsClosing(false);
+                closingTimerRef.current = null;
+            }, 150);
+        }
+    }, [isOpen, shouldRender]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (closingTimerRef.current) {
+                clearTimeout(closingTimerRef.current);
+            }
+        };
+    }, []);
+
+    // Get filtered commands based on query
     const filteredCommands = useMemo(() => {
-        if (!query) return commandRegistry.getAll();
-        return commandRegistry.search(query);
-    }, [query]);
+        if (!query || query.trim() === "") {
+            return allCommands;
+        }
+        // Filter commands by query
+        const lowerQuery = query.toLowerCase();
+        return allCommands.filter(
+            (cmd) =>
+                cmd.label.toLowerCase().includes(lowerQuery) ||
+                cmd.category.toLowerCase().includes(lowerQuery) ||
+                fuzzyMatch(cmd.label, lowerQuery),
+        );
+    }, [query, allCommands]);
 
     // Group commands by category
     const groupedCommands = useMemo(() => {
@@ -39,12 +108,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
     // Focus input when opened
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus();
-            setQuery("");
-            setSelectedIndex(0);
+        if (shouldRender && !isClosing && inputRef.current) {
+            // Small delay to ensure DOM is ready
+            requestAnimationFrame(() => {
+                inputRef.current?.focus();
+            });
         }
-    }, [isOpen]);
+    }, [shouldRender, isClosing]);
 
     // Reset selection when query changes
     useEffect(() => {
@@ -93,29 +163,33 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         [onClose, flatCommands, selectedIndex, executeCommand],
     );
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
     return (
         <div
             className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
             onClick={onClose}
-            onKeyDown={(e) => e.key === "Escape" && onClose()}
+            onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                    onClose();
+                }
+            }}
             role="dialog"
             aria-modal="true"
             aria-label="Command palette"
         >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/30" />
+            <div className={`absolute inset-0 bg-black/30 ${isClosing ? "animate-fadeOut" : "animate-fadeIn"}`} />
 
             {/* Command Palette Modal */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: Modal content needs click isolation */}
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: Keyboard events handled by input */}
             <div
-                className="relative w-full max-w-lg overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] shadow-2xl"
+                className={`relative w-full max-w-lg overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] shadow-2xl ${isClosing ? "animate-scaleOut" : "animate-scaleIn"}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Search input */}
-                <div className="border-b border-[var(--ui-border)] p-3">
+                <div className="flex items-center border-b border-[var(--ui-border)] p-3">
                     <input
                         ref={inputRef}
                         type="text"
@@ -123,8 +197,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Type a command..."
-                        className="w-full bg-transparent text-[var(--editor-fg)] placeholder-[var(--editor-line-number)] focus:outline-none"
+                        className="flex-1 bg-transparent text-[var(--editor-fg)] placeholder-[var(--editor-line-number)] focus:outline-none"
                     />
+                    <kbd className="rounded border border-[var(--ui-border)] bg-[var(--ui-hover)] px-2 py-1 text-xs text-[var(--editor-line-number)]">
+                        Esc
+                    </kbd>
                 </div>
 
                 {/* Command list */}

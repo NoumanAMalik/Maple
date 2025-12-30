@@ -68,16 +68,7 @@ function KeyboardShortcut({ keys, label, delay }: { keys: string[]; label: strin
             <div className="flex items-center gap-1">
                 {keys.map((key, i) => (
                     <span key={i}>
-                        <kbd
-                            className="
-                                inline-flex items-center justify-center
-                                min-w-[24px] h-6 px-1.5
-                                text-xs font-mono font-medium
-                                text-[var(--editor-fg)]/80
-                                bg-[var(--ui-hover)] border border-[var(--ui-border)]
-                                rounded-md shadow-[0_1px_0_var(--ui-border)]
-                            "
-                        >
+                        <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-mono font-medium text-[var(--editor-fg)]/80 bg-[var(--ui-hover)] border border-[var(--ui-border)] rounded-md shadow-[0_1px_0_var(--ui-border)]">
                             {key}
                         </kbd>
                         {i < keys.length - 1 && <span className="text-[var(--editor-line-number)] mx-0.5">+</span>}
@@ -112,9 +103,13 @@ export function WelcomeScreen() {
         }
     }, [isCreating, createFile, state.rootId, state.fileTree]);
 
-    // Detect platform for keyboard shortcuts
-    const isMac = typeof window !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-    const cmdKey = isMac ? "\u2318" : "Ctrl";
+    // Detect platform for keyboard shortcuts (client-side only to avoid hydration errors)
+    const [cmdKey, setCmdKey] = useState("Ctrl");
+
+    useEffect(() => {
+        const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+        setCmdKey(isMac ? "\u2318" : "Ctrl");
+    }, []);
 
     return (
         <div className="relative h-full w-full overflow-auto bg-[var(--editor-bg)]">

@@ -1,10 +1,11 @@
-import { commandRegistry, type Command } from "./registry";
+import { commandRegistry, type Command } from "@/lib/commands/registry";
 
 export interface CommandHandlers {
     createFile: () => void;
     saveFile: () => void;
     closeTab: () => void;
     toggleExplorer: () => void;
+    toggleSearch?: () => void;
     openFindReplace: () => void;
     selectAll: () => void;
     undo: () => void;
@@ -77,6 +78,17 @@ export function registerDefaultCommands(handlers: CommandHandlers): void {
             action: handlers.toggleExplorer,
         },
     ];
+
+    // Add optional commands
+    if (handlers.toggleSearch) {
+        commands.push({
+            id: "view.toggleSearch",
+            label: "Toggle Search",
+            category: "View",
+            shortcut: "⌘⇧F",
+            action: handlers.toggleSearch,
+        });
+    }
 
     for (const cmd of commands) {
         commandRegistry.register(cmd);

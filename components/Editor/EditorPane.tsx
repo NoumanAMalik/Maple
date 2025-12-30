@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { CodeEditor } from "./CodeEditor";
 import { FindReplace } from "./FindReplace";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useFindReplace } from "@/hooks/useFindReplace";
 import type { CursorPosition } from "@/types/editor";
 
 interface EditorPaneProps {
@@ -11,6 +12,7 @@ interface EditorPaneProps {
     onCursorChange?: (position: CursorPosition) => void;
     showFindReplace?: boolean;
     onCloseFindReplace?: () => void;
+    onContentChange?: (content: string) => void;
 }
 
 export const EditorPane = memo(function EditorPane({
@@ -18,6 +20,7 @@ export const EditorPane = memo(function EditorPane({
     onCursorChange,
     showFindReplace = false,
     onCloseFindReplace,
+    onContentChange: onContentChangeCallback,
 }: EditorPaneProps) {
     const { state, dispatch, getFileSystem, saveFile } = useWorkspace();
     const [content, setContent] = useState("");
@@ -58,9 +61,18 @@ export const EditorPane = memo(function EditorPane({
     }, [tab?.fileId, tab?.unsavedContent, getFileSystem]);
 
     // Handle content change
+    // Use find/replace hook at EditorPane level to access matches
+    const findReplaceHook = useFindReplace({
+        content,
+        isOpen: showFindReplace,
+    });
+
     const handleContentChange = useCallback(
         (newContent: string) => {
             setContent(newContent);
+
+            // Notify parent of content change
+            onContentChangeCallback?.(newContent);
 
             // Mark as dirty if changed from saved content
             const isDirty = newContent !== savedContentRef.current;
@@ -80,7 +92,7 @@ export const EditorPane = memo(function EditorPane({
                 });
             }
         },
-        [tab, dispatch],
+        [tab, dispatch, onContentChangeCallback],
     );
 
     // Save function
@@ -146,14 +158,34 @@ export const EditorPane = memo(function EditorPane({
                 onChange={handleContentChange}
                 onCursorChange={onCursorChange}
                 autoFocus
+                searchMatches={findReplaceHook.matches}
+                currentMatchIndex={findReplaceHook.currentMatchIndex}
             />
             {showFindReplace && onCloseFindReplace && (
                 <FindReplace
                     isOpen={showFindReplace}
                     onClose={onCloseFindReplace}
-                    content={content}
                     onReplace={handleReplaceContent}
                     onNavigateToMatch={handleNavigateToMatch}
+                    // Pass all hook values as props
+                    findQuery={findReplaceHook.findQuery}
+                    setFindQuery={findReplaceHook.setFindQuery}
+                    replaceQuery={findReplaceHook.replaceQuery}
+                    setReplaceQuery={findReplaceHook.setReplaceQuery}
+                    matches={findReplaceHook.matches}
+                    currentMatchIndex={findReplaceHook.currentMatchIndex}
+                    caseSensitive={findReplaceHook.caseSensitive}
+                    toggleCaseSensitive={findReplaceHook.toggleCaseSensitive}
+                    useRegex={findReplaceHook.useRegex}
+                    toggleUseRegex={findReplaceHook.toggleUseRegex}
+                    showReplace={findReplaceHook.showReplace}
+                    toggleShowReplace={findReplaceHook.toggleShowReplace}
+                    findNext={findReplaceHook.findNext}
+                    findPrevious={findReplaceHook.findPrevious}
+                    replaceCurrent={findReplaceHook.replaceCurrent}
+                    replaceAll={findReplaceHook.replaceAll}
+                    hasMatches={findReplaceHook.hasMatches}
+                    matchCount={findReplaceHook.matchCount}
                 />
             )}
         </div>
