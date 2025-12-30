@@ -23,10 +23,7 @@ import {
     Delete,
     Trash2,
     Command,
-    Option,
     ArrowUp,
-    ArrowLeft,
-    ArrowRight,
     ArrowDown,
     Search as SearchIcon,
     Replace,
@@ -243,32 +240,17 @@ function getKeyIcon(key: string): React.ReactNode {
 
     // Command/Control
     if (keyLower === "cmd/ctrl") {
-        return (
-            <>
-                <Command className="h-3 w-3" />
-                <span className="ml-1">⌘</span>
-            </>
-        );
+        return <span>⌘</span>;
     }
 
     // Shift
     if (keyLower === "shift") {
-        return (
-            <>
-                <ArrowUp className="h-3 w-3" />
-                <span className="ml-1">⇧</span>
-            </>
-        );
+        return <span>⇧</span>;
     }
 
     // Alt/Option
     if (keyLower === "alt") {
-        return (
-            <>
-                <Option className="h-3 w-3" />
-                <span className="ml-1">⌥</span>
-            </>
-        );
+        return <span>⌥</span>;
     }
 
     // Arrow Keys
@@ -282,54 +264,24 @@ function getKeyIcon(key: string): React.ReactNode {
     }
 
     if (keyLower === "arrow left") {
-        return (
-            <>
-                <ArrowLeft className="h-3 w-3" />
-                <span className="ml-1">←</span>
-            </>
-        );
+        return <span>←</span>;
     }
     if (keyLower === "arrow right") {
-        return (
-            <>
-                <ArrowRight className="h-3 w-3" />
-                <span className="ml-1">→</span>
-            </>
-        );
+        return <span>→</span>;
     }
     if (keyLower === "arrow up") {
-        return (
-            <>
-                <ArrowUp className="h-3 w-3" />
-                <span className="ml-1">↑</span>
-            </>
-        );
+        return <span>↑</span>;
     }
     if (keyLower === "arrow down") {
-        return (
-            <>
-                <ArrowDown className="h-3 w-3" />
-                <span className="ml-1">↓</span>
-            </>
-        );
+        return <span>↓</span>;
     }
     if (keyLower === "arrow left/right") {
-        return (
-            <>
-                <ArrowLeftRight className="h-3 w-3" />
-                <span className="ml-1">← →</span>
-            </>
-        );
+        return <span>← →</span>;
     }
 
     // Special keys
     if (keyLower === "backspace") {
-        return (
-            <>
-                <Delete className="h-3 w-3" />
-                <span className="ml-1">⌫</span>
-            </>
-        );
+        return <span>⌫</span>;
     }
 
     if (keyLower === "delete") {
@@ -351,30 +303,15 @@ function getKeyIcon(key: string): React.ReactNode {
     }
 
     if (keyLower === "enter") {
-        return (
-            <>
-                <CornerDownLeft className="h-3 w-3" />
-                <span className="ml-1">↵</span>
-            </>
-        );
+        return <span>↵</span>;
     }
 
     if (keyLower === "home") {
-        return (
-            <>
-                <Home className="h-3 w-3" />
-                <span className="ml-1">Home</span>
-            </>
-        );
+        return <span>Home</span>;
     }
 
     if (keyLower === "end") {
-        return (
-            <>
-                <MoveRight className="h-3 w-3" />
-                <span className="ml-1">End</span>
-            </>
-        );
+        return <span>End</span>;
     }
 
     // Single letter keys
@@ -391,25 +328,7 @@ export function ActivityBar({ isExplorerOpen, onToggleExplorer, isSearchOpen, on
 
     return (
         <>
-            <div className="flex h-full w-14 flex-col items-center gap-4 border-l border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] py-4">
-                <Tooltip content="Search" side="left">
-                    <button
-                        type="button"
-                        onClick={onToggleSearch}
-                        aria-label="Toggle Search"
-                        aria-pressed={isSearchOpen}
-                        className={cn(
-                            "relative flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]",
-                            isSearchOpen && "bg-[var(--ui-hover)]",
-                        )}
-                    >
-                        {isSearchOpen && (
-                            <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
-                        )}
-                        <SearchIcon className="h-5 w-5" />
-                    </button>
-                </Tooltip>
-
+            <div className="flex h-full w-14 flex-col items-center gap-4 bg-[var(--ui-sidebar-bg)] py-4">
                 <Tooltip content="Explorer" side="left">
                     <button
                         type="button"
@@ -427,6 +346,24 @@ export function ActivityBar({ isExplorerOpen, onToggleExplorer, isSearchOpen, on
                         <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
                             <path d="M3 3h8l2 2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
                         </svg>
+                    </button>
+                </Tooltip>
+
+                <Tooltip content="Search" side="left">
+                    <button
+                        type="button"
+                        onClick={onToggleSearch}
+                        aria-label="Toggle Search"
+                        aria-pressed={isSearchOpen}
+                        className={cn(
+                            "relative flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]",
+                            isSearchOpen && "bg-[var(--ui-hover)]",
+                        )}
+                    >
+                        {isSearchOpen && (
+                            <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
+                        )}
+                        <SearchIcon className="h-5 w-5" />
                     </button>
                 </Tooltip>
 

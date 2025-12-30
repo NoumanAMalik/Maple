@@ -13,6 +13,7 @@ import {
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { registerDefaultCommands } from "@/lib/commands/defaultCommands";
 import { useFindReplace } from "@/hooks/useFindReplace";
+import { cn } from "@/lib/utils";
 import type { CursorPosition } from "@/types/editor";
 
 // Helper to get all file names at root level
@@ -191,8 +192,8 @@ function EditorContent() {
                 e.preventDefault();
                 createNewFile();
             }
-            // Cmd+W / Ctrl+W to close tab
-            if ((e.metaKey || e.ctrlKey) && e.key === "w") {
+            // Cmd+1 / Ctrl+1 to close tab
+            if ((e.metaKey || e.ctrlKey) && e.key === "1") {
                 e.preventDefault();
                 if (state.activeTabId) {
                     closeTab(state.activeTabId);
@@ -249,25 +250,35 @@ function EditorContent() {
                     )}
                 </div>
 
-                {/* Search Sidebar */}
-                {isSearchSidebarOpen && state.activeTabId && (
-                    <FindReplaceSidebar
-                        isOpen={isSearchSidebarOpen}
-                        onClose={closeSearchSidebar}
-                        onNavigateToMatch={handleNavigateToMatch}
-                        onReplace={handleSidebarReplace}
-                        content={activeContent}
-                        {...findReplaceHook}
-                    />
-                )}
+                {/* Right sidebar group - single border on left */}
+                <div className="flex h-full border-l border-[var(--ui-border)]">
+                    {/* Search Sidebar */}
+                    <div
+                        className={cn(
+                            "h-full overflow-hidden bg-[var(--ui-sidebar-bg)] transition-all duration-300",
+                            isSearchSidebarOpen ? "w-60 border-r border-[var(--ui-border)]" : "w-0",
+                        )}
+                    >
+                        {isSearchSidebarOpen && (
+                            <FindReplaceSidebar
+                                isOpen={isSearchSidebarOpen}
+                                onClose={closeSearchSidebar}
+                                onNavigateToMatch={handleNavigateToMatch}
+                                onReplace={handleSidebarReplace}
+                                content={activeContent}
+                                {...findReplaceHook}
+                            />
+                        )}
+                    </div>
 
-                <Explorer isOpen={isExplorerOpen} />
-                <ActivityBar
-                    isExplorerOpen={isExplorerOpen}
-                    onToggleExplorer={toggleExplorer}
-                    isSearchOpen={isSearchSidebarOpen}
-                    onToggleSearch={toggleSearchSidebar}
-                />
+                    <Explorer isOpen={isExplorerOpen} />
+                    <ActivityBar
+                        isExplorerOpen={isExplorerOpen}
+                        onToggleExplorer={toggleExplorer}
+                        isSearchOpen={isSearchSidebarOpen}
+                        onToggleSearch={toggleSearchSidebar}
+                    />
+                </div>
             </div>
 
             {/* Status Bar */}

@@ -33,7 +33,7 @@ export function registerDefaultCommands(handlers: CommandHandlers): void {
             id: "file.close",
             label: "Close Tab",
             category: "File",
-            shortcut: "⌘W",
+            shortcut: "⌘1",
             action: handlers.closeTab,
         },
 

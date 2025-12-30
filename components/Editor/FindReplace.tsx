@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, X, Search, Replace } from "lucide-react";
 import type { SearchMatch } from "@/lib/search/findInDocument";
 
@@ -55,14 +55,39 @@ export function FindReplace({
     matchCount,
 }: FindReplaceProps) {
     const findInputRef = useRef<HTMLInputElement>(null);
+    const [isVisible, setIsVisible] = useState(isOpen);
+    const [isClosing, setIsClosing] = useState(false);
 
-    // Focus input when opened
+    // Handle open/close transitions with animation
     useEffect(() => {
-        if (isOpen && findInputRef.current) {
-            findInputRef.current.focus();
-            findInputRef.current.select();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        if (isOpen) {
+            setIsVisible(true);
+            setIsClosing(false);
+        } else if (isVisible) {
+            setIsClosing(true);
+            timer = setTimeout(() => {
+                setIsVisible(false);
+                setIsClosing(false);
+            }, 150); // Match animation duration
         }
-    }, [isOpen]);
+
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [isOpen, isVisible]);
+
+    // Focus input when component mounts (it only renders when open)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (findInputRef.current) {
+                findInputRef.current.focus();
+                findInputRef.current.select();
+            }
+        }, 10);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Navigate to current match
     useEffect(() => {
@@ -122,14 +147,14 @@ export function FindReplace({
         [onClose, findNext, findPrevious],
     );
 
-    if (!isOpen) return null;
+    if (!isVisible) return null;
 
     return (
-        <div className="absolute top-2 right-2 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl animate-slideInFromTopRight">
+        <div className={`absolute top-2 right-6 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl ${isClosing ? "animate-slideOutToTopRight" : "animate-slideInFromTopRight"}`}>
             {/* Find input row */}
             <div className="flex items-center gap-2">
-                <div className="flex flex-1 items-center gap-2">
-                    <Search className="h-4 w-4 text-[var(--editor-line-number)]" />
+                <div className="relative flex-1">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--editor-line-number)]" />
                     <input
                         ref={findInputRef}
                         type="text"
@@ -137,7 +162,8 @@ export function FindReplace({
                         onChange={(e) => setFindQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Find"
-                        className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
+                        autoFocus
+                        className="w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] pl-8 pr-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
                     />
                 </div>
                 <span className="text-xs text-[var(--editor-line-number)] whitespace-nowrap">
@@ -183,15 +209,15 @@ export function FindReplace({
             {/* Replace row (conditional) */}
             {showReplace && (
                 <div className="mt-2 flex items-center gap-2">
-                    <div className="flex flex-1 items-center gap-2">
-                        <Replace className="h-4 w-4 text-[var(--editor-line-number)]" />
+                    <div className="relative flex-1">
+                        <Replace className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--editor-line-number)]" />
                         <input
                             type="text"
                             value={replaceQuery}
                             onChange={(e) => setReplaceQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Replace"
-                            className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
+                            className="w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] pl-8 pr-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
                         />
                     </div>
                     <button

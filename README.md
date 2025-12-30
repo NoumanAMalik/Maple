@@ -126,7 +126,7 @@ The editor uses an overlay technique:
 | `Cmd/Ctrl + P` | Open file picker |
 | `Cmd/Ctrl + Shift + P` | Command palette |
 | `Cmd/Ctrl + N` | New file |
-| `Cmd/Ctrl + W` | Close tab |
+| `Cmd/Ctrl + 1` | Close tab |
 | `Cmd/Ctrl + F` | Find in file |
 
 ## Browser Support

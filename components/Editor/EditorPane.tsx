@@ -60,6 +60,13 @@ export const EditorPane = memo(function EditorPane({
             });
     }, [tab?.fileId, tab?.unsavedContent, getFileSystem]);
 
+    // Notify parent of content change (including initial load)
+    useEffect(() => {
+        if (content) {
+            onContentChangeCallback?.(content);
+        }
+    }, [content, onContentChangeCallback]);
+
     // Handle content change
     // Use find/replace hook at EditorPane level to access matches
     const findReplaceHook = useFindReplace({
@@ -161,7 +168,7 @@ export const EditorPane = memo(function EditorPane({
                 searchMatches={findReplaceHook.matches}
                 currentMatchIndex={findReplaceHook.currentMatchIndex}
             />
-            {showFindReplace && onCloseFindReplace && (
+            {onCloseFindReplace && (
                 <FindReplace
                     isOpen={showFindReplace}
                     onClose={onCloseFindReplace}

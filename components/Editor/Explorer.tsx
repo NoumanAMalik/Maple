@@ -101,8 +101,8 @@ export function Explorer({ isOpen }: ExplorerProps) {
     return (
         <div
             className={cn(
-                "h-full overflow-hidden border-l border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] transition-all duration-300",
-                isOpen ? "w-60" : "w-0",
+                "h-full overflow-hidden bg-[var(--ui-sidebar-bg)] transition-all duration-300",
+                isOpen ? "w-60 border-r border-[var(--ui-border)]" : "w-0",
             )}
         >
             {isOpen && (

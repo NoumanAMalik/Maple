@@ -1,5 +1,6 @@
 import type { FileContent, FileNode } from "@/types/file";
 import type { FileSystemOperations } from "./types";
+import type { PersistedTabState } from "@/types/workspace";
 import { IndexedDBStorage } from "./indexedDB";
 import { FILE_EXTENSIONS, type SupportedLanguage } from "@/utils/constants";
 
@@ -226,5 +227,23 @@ export class FileSystem implements FileSystemOperations {
     async getFileByPath(path: string): Promise<FileNode | null> {
         const allFiles = await this.storage.getAll<FileNode>("files");
         return allFiles.find((file) => file.path === path) ?? null;
+    }
+
+    async saveTabState(tabOrder: string[], activeFileId: string | null): Promise<void> {
+        const state: PersistedTabState = {
+            id: "__tab_state__",
+            version: 1,
+            tabOrder,
+            activeFileId,
+            updatedAt: Date.now(),
+        };
+        await this.storage.put("files", state);
+    }
+
+    async loadTabState(): Promise<PersistedTabState | null> {
+        const state = await this.storage.get<PersistedTabState>("files", "__tab_state__");
+        if (!state) return null;
+        if (state.version !== 1) return null;
+        return state;
     }
 }

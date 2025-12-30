@@ -83,6 +83,19 @@ export function CodeEditor({
         }
     }, [editor.cursor, scrollToPosition, coordinateConverter.charWidth]);
 
+    // Scroll to current search match when navigating
+    useEffect(() => {
+        if (
+            searchMatches &&
+            currentMatchIndex !== undefined &&
+            currentMatchIndex >= 0 &&
+            currentMatchIndex < searchMatches.length
+        ) {
+            const match = searchMatches[currentMatchIndex];
+            scrollToPosition(match.line, match.column, coordinateConverter.charWidth);
+        }
+    }, [currentMatchIndex, searchMatches, scrollToPosition, coordinateConverter.charWidth]);
+
     // Handle scroll events
     const handleScroll = useCallback(
         (e: React.UIEvent<HTMLDivElement>) => {

@@ -33,5 +33,5 @@ export const KEYBOARD_SHORTCUTS = {
     COMMAND_PALETTE: { key: "p", meta: true, shift: true },
     FIND: { key: "f", meta: true },
     NEW_FILE: { key: "n", meta: true },
-    CLOSE_TAB: { key: "w", meta: true },
+    CLOSE_TAB: { key: "1", meta: true },
 } as const;

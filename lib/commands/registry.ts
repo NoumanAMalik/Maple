@@ -9,7 +9,6 @@ export interface Command {
 }
 
 class CommandRegistry {
-    private readonly instanceId = Math.random().toString(36).substring(7);
     private commands: Map<string, Command> = new Map();
     private listeners: Set<() => void> = new Set();
 

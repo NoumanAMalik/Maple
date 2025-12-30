@@ -112,18 +112,22 @@ export function FindReplaceSidebar({
     if (!isOpen) return null;
 
     return (
-        <div className="flex h-full w-60 flex-col border-l border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)]">
+        <div className="flex h-full flex-col">
             {/* Header */}
-            <div className="flex h-10 items-center justify-between border-b border-[var(--ui-border)] px-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--editor-fg)]">Search</h2>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex h-6 w-6 items-center justify-center rounded text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] transition-colors"
-                    aria-label="Close search"
-                >
-                    <X className="h-4 w-4" />
-                </button>
+            <div className="border-b border-[var(--ui-border)] p-2">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--editor-line-number)]">
+                        Search
+                    </h2>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex h-6 w-6 items-center justify-center rounded text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] transition-colors"
+                        aria-label="Close search"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Search Input Section */}

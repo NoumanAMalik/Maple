@@ -33,11 +33,20 @@ export interface WorkspaceState {
     rootId: string;
 }
 
+export interface PersistedTabState {
+    id: "__tab_state__";
+    version: 1;
+    tabOrder: string[];
+    activeFileId: string | null;
+    updatedAt: number;
+}
+
 /**
  * Actions for workspace reducer
  */
 export type WorkspaceAction =
     | { type: "INIT_WORKSPACE"; payload: { fileTree: TreeNode[]; rootId: string } }
+    | { type: "RESTORE_TABS"; payload: { tabs: EditorTab[]; activeTabId: string | null } }
     | { type: "OPEN_FILE"; payload: { file: FileContent } }
     | { type: "CLOSE_TAB"; payload: { tabId: string } }
     | { type: "SET_ACTIVE_TAB"; payload: { tabId: string } }

@@ -193,6 +193,10 @@ body {
     animation: slideInFromTopRight 0.15s ease-out;
 }
 
+.animate-slideOutToTopRight {
+    animation: slideOutToTopRight 0.15s ease-out forwards;
+}
+
 .animate-fadeIn {
     animation: fadeIn 0.15s ease-out;
 }

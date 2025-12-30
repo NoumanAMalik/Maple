@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { FileSystem } from "@/lib/storage";
+import { useTabStatePersistence } from "@/hooks/useTabStatePersistence";
 import type { WorkspaceState, WorkspaceAction, WorkspaceContextValue, EditorTab, TreeNode } from "@/types/workspace";
 import type { FileNode } from "@/types/file";
 
@@ -170,6 +171,13 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
                 isInitialized: true,
             };
 
+        case "RESTORE_TABS":
+            return {
+                ...state,
+                tabs: action.payload.tabs,
+                activeTabId: action.payload.activeTabId,
+            };
+
         case "OPEN_FILE": {
             const { file } = action.payload;
 
@@ -201,7 +209,9 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
 
         case "CLOSE_TAB": {
             const { tabId } = action.payload;
+            console.log("[CLOSE_TAB] Closing tab:", tabId);
             const newTabs = state.tabs.filter((t) => t.id !== tabId);
+            console.log("[CLOSE_TAB] Remaining tabs:", newTabs.map((t) => t.fileName));
 
             // If closing active tab, activate the next or previous tab
             let newActiveTabId = state.activeTabId;
@@ -367,6 +377,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
         init().catch(console.error);
     }, []);
+
+    useTabStatePersistence({
+        fileSystem: fsRef.current,
+        isInitialized: state.isInitialized,
+        tabFileIds: state.tabs.map((t) => t.fileId),
+        activeFileId: state.activeTabId,
+        onRestoreTabs: (tabs, activeTabId) => {
+            dispatch({ type: "RESTORE_TABS", payload: { tabs, activeTabId } });
+        },
+    });
 
     // Get file system reference
     const getFileSystem = useCallback(() => {

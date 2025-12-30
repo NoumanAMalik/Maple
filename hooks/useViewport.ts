@@ -106,15 +106,10 @@ export function useViewport({
                 return; // Already visible
             }
 
-            let newScrollTop: number;
-
-            if (lineTop < scrollTop) {
-                // Line is above viewport - scroll up
-                newScrollTop = lineTop;
-            } else {
-                // Line is below viewport - scroll down
-                newScrollTop = lineBottom - dimensions.height;
-            }
+            // Center the line in the viewport
+            const lineCenter = lineTop + lineHeight / 2;
+            const viewportCenter = dimensions.height / 2;
+            let newScrollTop = lineCenter - viewportCenter;
 
             // Clamp to valid range
             const maxScrollTop = Math.max(0, lineCount * lineHeight - dimensions.height);
