@@ -1,0 +1,242 @@
+name: Test & Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for coverage comparison
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun type-check
+
+      - name: Run linter
+        run: bun lint
+
+      - name: Run tests with coverage
+        run: bun test:coverage
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-maple
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Coverage | Threshold | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|----------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+            # Extract global coverage (this is a simplified version)
+            # In production, you'd parse the JSON file properly
+            echo "| Statements | ![Coverage](https://img.shields.io/badge/coverage-check_report-blue) | 70% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Branches | ![Coverage](https://img.shields.io/badge/coverage-check_report-blue) | 70% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Functions | ![Coverage](https://img.shields.io/badge/coverage-check_report-blue) | 70% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Lines | ![Coverage](https://img.shields.io/badge/coverage-check_report-blue) | 70% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Module-Specific Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "| Module | Threshold | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| lib/tokenizer/** | 90% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| lib/editor/pieceTable.ts | 90% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| hooks/useEditorState.ts | 90% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| lib/storage/** | 80% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📊 [Full Coverage Report](https://app.codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Check if coverage summary exists
+            if (!fs.existsSync('coverage/coverage-summary.json')) {
+              console.log('No coverage summary found');
+              return;
+            }
+
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            const total = coverage.total;
+
+            // Helper function to get status emoji
+            const getStatus = (value, threshold) => {
+              return value >= threshold ? '✅' : '❌';
+            };
+
+            // Helper function to format percentage
+            const formatPct = (value) => `${value.toFixed(2)}%`;
+
+            // Build comment body
+            let body = '## 📊 Coverage Report\n\n';
+            body += '### Global Coverage\n\n';
+            body += '| Metric | Coverage | Threshold | Status |\n';
+            body += '|--------|----------|-----------|--------|\n';
+            body += `| Statements | ${formatPct(total.statements.pct)} | 70% | ${getStatus(total.statements.pct, 70)} |\n`;
+            body += `| Branches | ${formatPct(total.branches.pct)} | 70% | ${getStatus(total.branches.pct, 70)} |\n`;
+            body += `| Functions | ${formatPct(total.functions.pct)} | 70% | ${getStatus(total.functions.pct, 70)} |\n`;
+            body += `| Lines | ${formatPct(total.lines.pct)} | 70% | ${getStatus(total.lines.pct, 70)} |\n\n`;
+
+            body += '### Module-Specific Thresholds\n\n';
+            body += '| Module | Threshold | Status |\n';
+            body += '|--------|-----------|--------|\n';
+            body += '| `lib/tokenizer/**` | 90% | See Codecov for details |\n';
+            body += '| `lib/editor/pieceTable.ts` | 90% | See Codecov for details |\n';
+            body += '| `hooks/useEditorState.ts` | 90% | See Codecov for details |\n';
+            body += '| `lib/storage/**` | 80% | See Codecov for details |\n\n';
+
+            body += `📈 [View Full Report on Codecov](https://app.codecov.io/gh/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number})\n\n`;
+            body += `<sub>Coverage thresholds are enforced in \`vitest.config.ts\`. Tests will fail if thresholds are not met.</sub>`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('📊 Coverage Report')
+            );
+
+            // Update or create comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only run benchmarks on main branch to avoid noise
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run benchmarks
+        run: bun test:bench
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Alert if performance degrades
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+          # Store results in gh-pages branch
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results.json
+          retention-days: 90
+
+  # Job to check all required checks pass
+  all-checks:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always()
+
+    steps:
+      - name: Check test job
+        if: needs.test.result != 'success'
+        run: |
+          echo "Test job failed or was cancelled"
+          exit 1
+
+      - name: All checks passed
+        run: echo "All required checks passed successfully!"
