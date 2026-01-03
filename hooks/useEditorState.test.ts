@@ -871,4 +871,265 @@ describe("useEditorState", () => {
             expect(result.current.getContent()).toBe("Hello World");
         });
     });
+
+    describe("Branch Coverage Tests", () => {
+        it("should detect tab switching when initialContent changes", () => {
+            const { result, rerender } = renderHook(
+                ({ content }) => useEditorState({ initialContent: content }),
+                { initialProps: { content: "First tab" } },
+            );
+
+            expect(result.current.getContent()).toBe("First tab");
+
+            rerender({ content: "Second tab" });
+            expect(result.current.getContent()).toBe("Second tab");
+        });
+
+        it("should batch history at exactly 300ms boundary", async () => {
+            vi.useFakeTimers();
+            const { result } = renderHook(() => useEditorState());
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "A" });
+            });
+
+            act(() => {
+                vi.advanceTimersByTime(299);
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "B" });
+            });
+
+            act(() => {
+                vi.advanceTimersByTime(1);
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "C" });
+            });
+
+            expect(result.current.getContent()).toBe("ABC");
+
+            vi.useRealTimers();
+        });
+
+        it("should handle word navigation at line boundaries", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "First line\nSecond line" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursor", direction: "wordEnd" });
+            });
+
+            expect(result.current.cursor.column).toBeGreaterThan(1);
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 11 } });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursor", direction: "wordEnd" });
+            });
+
+            expect(result.current.cursor.line).toBe(2);
+        });
+
+        it("should clamp cursor at document edges", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Line 1\nLine 2" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 0, column: 0 } });
+            });
+
+            expect(result.current.cursor.line).toBe(1);
+            expect(result.current.cursor.column).toBe(1);
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 100, column: 100 } });
+            });
+
+            const lastLine = result.current.getLineCount();
+            expect(result.current.cursor.line).toBe(lastLine);
+        });
+
+        it("should handle select all with empty document", () => {
+            const { result } = renderHook(() => useEditorState());
+
+            act(() => {
+                result.current.executeCommand({ type: "selectAll" });
+            });
+
+            expect(result.current.selection).toBeNull();
+        });
+
+        it("should handle moveCursorTo with extend selection", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Hello World" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 6 }, extendSelection: true });
+            });
+
+            expect(result.current.selection).not.toBeNull();
+            expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
+            expect(result.current.selection?.active).toEqual({ line: 1, column: 6 });
+        });
+
+        it("should respect history stack max size (1000 entries)", () => {
+            const { result } = renderHook(() => useEditorState());
+
+            for (let i = 0; i < 1005; i++) {
+                act(() => {
+                    result.current.executeCommand({ type: "insert", text: "x" });
+                });
+
+                if (i < 1004) {
+                    act(() => {
+                        vi.advanceTimersByTime(301);
+                    });
+                }
+            }
+
+            let undoCount = 0;
+            while (result.current.canUndo && undoCount < 2000) {
+                act(() => {
+                    result.current.executeCommand({ type: "undo" });
+                });
+                undoCount++;
+            }
+
+            expect(undoCount).toBeLessThanOrEqual(1000);
+        });
+
+        it("should handle history overflow behavior", () => {
+            vi.useFakeTimers();
+            const { result } = renderHook(() => useEditorState());
+
+            for (let i = 0; i < 1100; i++) {
+                act(() => {
+                    result.current.executeCommand({ type: "insert", text: `${i}` });
+                });
+                act(() => {
+                    vi.advanceTimersByTime(301);
+                });
+            }
+
+            let undoCount = 0;
+            const maxUndos = 1500;
+            while (result.current.canUndo && undoCount < maxUndos) {
+                act(() => {
+                    result.current.executeCommand({ type: "undo" });
+                });
+                undoCount++;
+            }
+
+            expect(undoCount).toBeLessThanOrEqual(1000);
+            vi.useRealTimers();
+        });
+
+        it("should handle select all with large document", () => {
+            const largeContent = Array.from({ length: 1000 }, (_, i) => `Line ${i + 1}`).join("\n");
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: largeContent }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "selectAll" });
+            });
+
+            expect(result.current.selection).not.toBeNull();
+            expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
+            expect(result.current.selection?.active.line).toBe(1000);
+        });
+
+        it("should handle cursor movement with very long lines", () => {
+            const longLine = "a".repeat(10000);
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: longLine }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 5000 } });
+            });
+
+            expect(result.current.cursor.column).toBe(5000);
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursor", direction: "right" });
+            });
+
+            expect(result.current.cursor.column).toBe(5001);
+        });
+
+        it("should handle selection across multiple lines with extend", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3\nLine 4" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 1 } });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 4, column: 1 }, extendSelection: true });
+            });
+
+            expect(result.current.selection).not.toBeNull();
+            expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
+            expect(result.current.selection?.active).toEqual({ line: 4, column: 1 });
+        });
+
+        it("should handle delete at document start", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Hello World" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 1 } });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "delete" });
+            });
+
+            expect(result.current.getContent()).toBe("Hello World");
+        });
+
+        it("should handle delete at line boundaries", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Line 1\nLine 2" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 7 } });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "delete" });
+            });
+
+            expect(result.current.getContent()).toBe("Line 1Line 2");
+        });
+
+        it("should handle backspace at line boundaries", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Line 1\nLine 2" }),
+            );
+
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 2, column: 1 } });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "delete", forward: false } });
+            });
+
+            expect(result.current.getContent()).toBe("Line 1Line 2");
+        });
+    });
 });

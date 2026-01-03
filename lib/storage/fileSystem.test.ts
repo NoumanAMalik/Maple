@@ -307,4 +307,115 @@ describe("FileSystem", () => {
             expect(updated?.updatedAt).toBeGreaterThan(originalTime);
         });
     });
+
+    describe("Branch Coverage Tests - Move Operations", () => {
+        it("should update children paths recursively", async () => {
+            const parent = await fs.createDirectory("root", "parent");
+            const child = await fs.createDirectory(parent.id, "child");
+            const grandchild = await fs.createDirectory(child.id, "grandchild");
+            const file = await fs.createFile(grandchild.id, "test.ts");
+
+            const newParent = await fs.createDirectory("root", "newParent");
+            await fs.moveNode(parent.id, newParent.id);
+
+            const movedFile = await fs.getNodeById(file.id);
+            expect(movedFile?.path).toBe("/newParent/parent/child/grandchild/test.ts");
+        });
+
+        it("should handle move operations with deeply nested structures", async () => {
+            let currentParent = "root";
+            const ids: string[] = [];
+
+            for (let i = 0; i < 10; i++) {
+                const dir = await fs.createDirectory(currentParent, `level${i}`);
+                ids.push(dir.id);
+                currentParent = dir.id;
+            }
+
+            const deepFile = await fs.createFile(currentParent, "deep.ts");
+            const newRoot = await fs.createDirectory("root", "newRoot");
+
+            await fs.moveNode(ids[0], newRoot.id);
+
+            const movedFile = await fs.getNodeById(deepFile.id);
+            expect(movedFile?.path).toContain("/newRoot/level0");
+        });
+
+        it("should handle error in moveNode with invalid paths", async () => {
+            const file = await fs.createFile("root", "test.ts");
+            await expect(fs.moveNode(file.id, "invalid-parent-id")).rejects.toThrow();
+        });
+
+        it("should detect path conflicts in edge cases", async () => {
+            const file1 = await fs.createFile("root", "test.ts");
+            const dir = await fs.createDirectory("root", "dir");
+            const file2 = await fs.createFile(dir.id, "test.ts");
+
+            await expect(fs.moveNode(file2.id, "root")).rejects.toThrow();
+        });
+
+        it("should move file to root directory", async () => {
+            const dir = await fs.createDirectory("root", "subdir");
+            const file = await fs.createFile(dir.id, "test.ts");
+
+            await fs.moveNode(file.id, "root");
+
+            const movedFile = await fs.getNodeById(file.id);
+            expect(movedFile?.parentId).toBe("root");
+            expect(movedFile?.path).toBe("/test.ts");
+        });
+
+        it("should move directory with mixed content", async () => {
+            const dir = await fs.createDirectory("root", "source");
+            await fs.createFile(dir.id, "file1.ts");
+            await fs.createFile(dir.id, "file2.ts");
+            const subDir = await fs.createDirectory(dir.id, "subdir");
+            await fs.createFile(subDir.id, "file3.ts");
+
+            const target = await fs.createDirectory("root", "target");
+            await fs.moveNode(dir.id, target.id);
+
+            const children = await fs.getChildren(dir.id);
+            expect(children.length).toBe(3);
+
+            for (const child of children) {
+                expect(child.path).toContain("/target/source");
+            }
+        });
+
+        it("should handle moving file to same parent", async () => {
+            const file = await fs.createFile("root", "test.ts");
+            await fs.moveNode(file.id, "root");
+
+            const node = await fs.getNodeById(file.id);
+            expect(node?.parentId).toBe("root");
+        });
+
+        it("should prevent moving directory into itself", async () => {
+            const dir = await fs.createDirectory("root", "dir");
+            await expect(fs.moveNode(dir.id, dir.id)).rejects.toThrow();
+        });
+
+        it("should prevent moving directory into its child", async () => {
+            const parent = await fs.createDirectory("root", "parent");
+            const child = await fs.createDirectory(parent.id, "child");
+
+            await expect(fs.moveNode(parent.id, child.id)).rejects.toThrow();
+        });
+
+        it("should handle concurrent move operations", async () => {
+            const files = await Promise.all([
+                fs.createFile("root", "file1.ts"),
+                fs.createFile("root", "file2.ts"),
+                fs.createFile("root", "file3.ts"),
+            ]);
+
+            const target = await fs.createDirectory("root", "target");
+
+            await Promise.all(files.map((file) => fs.moveNode(file.id, target.id)));
+
+            const children = await fs.getChildren(target.id);
+            expect(children.length).toBe(3);
+        });
+    });
 });
