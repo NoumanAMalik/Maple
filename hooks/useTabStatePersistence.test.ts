@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useTabStatePersistence } from "./useTabStatePersistence";
 import "fake-indexeddb/auto";
 import { FileSystem } from "@/lib/storage";
@@ -18,13 +18,9 @@ async function setupTestFileSystem(): Promise<{ fs: FileSystem; fileIds: string[
 }
 
 describe("useTabStatePersistence", () => {
-    beforeEach(() => {
-        vi.useFakeTimers();
-    });
-
     afterEach(() => {
-        vi.useRealTimers();
         vi.clearAllMocks();
+        vi.useRealTimers();
     });
 
     describe("Initialization", () => {
@@ -44,8 +40,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).not.toHaveBeenCalled();
@@ -69,8 +66,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).toHaveBeenCalled();
@@ -93,8 +91,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).not.toHaveBeenCalled();
@@ -116,8 +115,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).not.toHaveBeenCalled();
@@ -139,8 +139,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).toHaveBeenCalled();
@@ -164,8 +165,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             const [tabs, activeId] = onRestoreTabs.mock.calls[0];
@@ -188,8 +190,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             const [tabs] = onRestoreTabs.mock.calls[0];
@@ -222,8 +225,9 @@ describe("useTabStatePersistence", () => {
                 },
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             const fileId = "file1.ts";
@@ -254,8 +258,9 @@ describe("useTabStatePersistence", () => {
                 },
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             const fileId = "file1.ts";
@@ -284,8 +289,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             const fileId = "file1.ts";
@@ -305,8 +311,9 @@ describe("useTabStatePersistence", () => {
                 },
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             rerender({ tabFileIds: [], activeFileId: null });
@@ -333,8 +340,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).not.toHaveBeenCalled();
@@ -362,8 +370,9 @@ describe("useTabStatePersistence", () => {
 
             rerender({ isInitialized: true });
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).toHaveBeenCalledTimes(1);
@@ -407,8 +416,9 @@ describe("useTabStatePersistence", () => {
                 }),
             );
 
+            // Wait for async operations to complete
             await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 50));
+                await new Promise((resolve) => setImmediate(resolve));
             });
 
             expect(onRestoreTabs).toHaveBeenCalled();
