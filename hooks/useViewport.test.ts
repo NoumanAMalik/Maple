@@ -410,4 +410,156 @@ describe("useViewport", () => {
             expect(result.current.viewState.lastVisibleLine).toBe(7);
         });
     });
+
+    describe("Additional Edge Cases", () => {
+        it("should scroll to very first line", () => {
+            const mockElement = createMockElement();
+            const containerRef = createMockContainer(mockElement);
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 100,
+                    lineHeight: 20,
+                }),
+            );
+
+            act(() => {
+                result.current.scrollToLine(50);
+            });
+
+            expect(mockElement.scrollTop).toBeGreaterThan(0);
+
+            act(() => {
+                result.current.scrollToLine(1);
+            });
+
+            expect(mockElement.scrollTop).toBe(0);
+        });
+
+        it("should scroll to very last line", () => {
+            const mockElement = createMockElement(800, 600);
+            const containerRef = createMockContainer(mockElement);
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 100,
+                    lineHeight: 20,
+                }),
+            );
+
+            act(() => {
+                result.current.scrollToLine(100);
+            });
+
+            expect(mockElement.scrollTop).toBeGreaterThan(0);
+            const maxScroll = 100 * 20 - 600;
+            expect(mockElement.scrollTop).toBeLessThanOrEqual(maxScroll);
+        });
+
+        it("should handle horizontal scroll clamping", () => {
+            const mockElement = createMockElement(800, 600);
+            const containerRef = createMockContainer(mockElement);
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 10,
+                    lineHeight: 20,
+                }),
+            );
+
+            act(() => {
+                result.current.scrollToPosition(1, 5000);
+            });
+
+            expect(mockElement.scrollLeft).toBeGreaterThanOrEqual(0);
+
+            act(() => {
+                result.current.scrollToPosition(1, -100);
+            });
+
+            expect(mockElement.scrollLeft).toBe(0);
+        });
+
+        it("should handle multiple rapid scroll operations", () => {
+            const mockElement = createMockElement();
+            const containerRef = createMockContainer(mockElement);
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 100,
+                    lineHeight: 20,
+                }),
+            );
+
+            act(() => {
+                result.current.scrollToLine(10);
+                result.current.scrollToLine(20);
+                result.current.scrollToLine(30);
+                result.current.scrollToLine(40);
+                result.current.scrollToLine(50);
+            });
+
+            expect(mockElement.scrollTop).toBeGreaterThan(0);
+        });
+
+        it("should handle viewport resize during scroll", () => {
+            const mockElement = createMockElement(800, 600);
+            const containerRef = createMockContainer(mockElement);
+            const { result, rerender } = renderHook(
+                ({ lineCount }) =>
+                    useViewport({
+                        containerRef,
+                        lineCount,
+                        lineHeight: 20,
+                    }),
+                { initialProps: { lineCount: 100 } },
+            );
+
+            act(() => {
+                result.current.scrollToLine(50);
+            });
+
+            Object.defineProperty(mockElement, "clientHeight", {
+                value: 400,
+                writable: true,
+                configurable: true,
+            });
+
+            rerender({ lineCount: 100 });
+
+            expect(result.current.viewState.viewportHeight).toBe(400);
+        });
+
+        it("should handle scrolling with no container", () => {
+            const containerRef = { current: null };
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 100,
+                    lineHeight: 20,
+                }),
+            );
+
+            act(() => {
+                result.current.scrollToLine(50);
+            });
+
+            expect(result.current.viewState.firstVisibleLine).toBe(1);
+        });
+
+        it("should handle zero line count", () => {
+            const mockElement = createMockElement();
+            const containerRef = createMockContainer(mockElement);
+            const { result } = renderHook(() =>
+                useViewport({
+                    containerRef,
+                    lineCount: 0,
+                    lineHeight: 20,
+                }),
+            );
+
+            expect(result.current.viewState.firstVisibleLine).toBe(1);
+            expect(result.current.viewState.lastVisibleLine).toBe(1);
+        });
+    });
 });
