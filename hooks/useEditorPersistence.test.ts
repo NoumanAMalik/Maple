@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useEditorPersistence } from "./useEditorPersistence";
 import "fake-indexeddb/auto";
 import { FileSystem } from "@/lib/storage";
@@ -13,13 +13,9 @@ async function createTestFile(): Promise<string> {
 }
 
 describe("useEditorPersistence", () => {
-    beforeEach(() => {
-        vi.useFakeTimers();
-    });
-
     afterEach(() => {
-        vi.useRealTimers();
         vi.clearAllMocks();
+        vi.useRealTimers();
     });
 
     describe("Initialization", () => {
@@ -62,11 +58,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
         });
 
         it("should not load when fileId is null", async () => {
@@ -80,11 +74,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
             expect(onLoad).not.toHaveBeenCalled();
         });
 
@@ -99,11 +91,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
             expect(onLoad).not.toHaveBeenCalled();
         });
     });
@@ -119,11 +109,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            vi.advanceTimersByTime(600);
 
             expect(result.current.isSaving).toBe(false);
         });
@@ -137,11 +125,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            vi.advanceTimersByTime(600);
 
             expect(result.current.isSaving).toBe(false);
         });
@@ -158,8 +144,8 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
 
             expect(typeof result.current.save).toBe("function");
@@ -174,8 +160,8 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
 
             expect(typeof result.current.createFile).toBe("function");
@@ -192,11 +178,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
 
             const fileId = await result.current.createFile("root", "new-file.ts");
             expect(fileId).toBeDefined();
@@ -225,8 +209,8 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
 
             const fileId = await result.current.createFile("root", "file-with-content.ts");
@@ -237,7 +221,7 @@ describe("useEditorPersistence", () => {
     describe("Error Handling", () => {
         it("should handle onError callback", async () => {
             const onError = vi.fn();
-            renderHook(() =>
+            const { result } = renderHook(() =>
                 useEditorPersistence({
                     fileId: "test-file-id.ts",
                     content: "",
@@ -246,8 +230,8 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
 
             expect(onError).not.toHaveBeenCalled();
@@ -265,11 +249,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            vi.advanceTimersByTime(600);
 
             expect(result.current.isSaving).toBe(false);
         });
@@ -285,11 +267,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
         });
 
         it("should handle undefined content", async () => {
@@ -302,11 +282,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
         });
 
         it("should handle non-existent fileId", async () => {
@@ -318,11 +296,9 @@ describe("useEditorPersistence", () => {
                 }),
             );
 
-            await act(async () => {
-                await new Promise((resolve) => setTimeout(resolve, 100));
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
             });
-
-            expect(result.current.isReady).toBe(true);
         });
     });
 });
