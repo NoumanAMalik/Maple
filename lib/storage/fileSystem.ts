@@ -246,4 +246,14 @@ export class FileSystem implements FileSystemOperations {
         if (state.version !== 1) return null;
         return state;
     }
+
+    /** Get a file/directory node by ID (for testing) */
+    async getNodeById(id: string): Promise<FileNode | null> {
+        return this.storage.get<FileNode>("files", id);
+    }
+
+    /** Get all children of a directory (for testing) */
+    async getChildren(id: string): Promise<FileNode[]> {
+        return this.listDirectory(id);
+    }
 }

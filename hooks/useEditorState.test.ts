@@ -1126,7 +1126,7 @@ describe("useEditorState", () => {
             });
 
             act(() => {
-                result.current.executeCommand({ type: "delete", forward: false } });
+                result.current.executeCommand({ type: "delete", forward: false });
             });
 
             expect(result.current.getContent()).toBe("Line 1Line 2");

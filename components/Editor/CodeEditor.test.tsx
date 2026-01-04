@@ -1103,7 +1103,7 @@ describe("CodeEditor", () => {
     });
 
     describe("Global Mouse Events", () => {
-        it("should listen for global mouseup during drag", () => {
+        it("should listen for global mouseup during drag", async () => {
             render(<CodeEditor />);
 
             const scrollContainer = screen.getByRole("application").querySelector(".editor-scroll-container");
@@ -1119,7 +1119,9 @@ describe("CodeEditor", () => {
 
             // Simulate global mouseup (outside editor)
             const globalMouseUpEvent = new MouseEvent("mouseup");
-            window.dispatchEvent(globalMouseUpEvent);
+            await waitFor(() => {
+                window.dispatchEvent(globalMouseUpEvent);
+            });
 
             // Next mousemove should not extend selection
             fireEvent.mouseMove(scrollContainer!, {

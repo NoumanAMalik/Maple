@@ -474,7 +474,6 @@ describe("CommandPalette", () => {
         });
 
         it("should apply closing animation class", async () => {
-            vi.useFakeTimers();
             const { rerender } = render(<CommandPalette isOpen={true} onClose={onCloseMock} />);
 
             // Close the palette
@@ -484,17 +483,14 @@ describe("CommandPalette", () => {
             await waitFor(() => {
                 const backdrop = screen.getByRole("dialog").previousElementSibling;
                 expect(backdrop).toHaveClass("animate-fadeOut");
-            });
+            }, { timeout: 1000 });
 
             const modal = screen.getByRole("dialog").parentElement;
             const modalContent = within(modal as HTMLElement).getByRole("dialog");
             expect(modalContent).toHaveClass("animate-scaleOut");
-
-            vi.useRealTimers();
         });
 
         it("should not render when shouldRender is false", async () => {
-            vi.useFakeTimers();
             const { rerender } = render(<CommandPalette isOpen={true} onClose={onCloseMock} />);
 
             // Verify it's rendered when open
@@ -503,15 +499,10 @@ describe("CommandPalette", () => {
             // Close the palette
             rerender(<CommandPalette isOpen={false} onClose={onCloseMock} />);
 
-            // Fast-forward past the closing animation (150ms)
-            vi.advanceTimersByTime(150);
-
-            // Should be completely removed from DOM
+            // Should be completely removed from DOM after animation
             await waitFor(() => {
                 expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-            });
-
-            vi.useRealTimers();
+            }, { timeout: 1000 });
         });
     });
 
