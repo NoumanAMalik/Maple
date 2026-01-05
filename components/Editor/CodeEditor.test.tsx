@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { CodeEditor } from "./CodeEditor";
-import type { CursorPosition, EditorConfig, Selection, ViewState } from "@/types/editor";
+import type { EditorConfig, ViewState } from "@/types/editor";
 import type { EditorStateAPI } from "@/hooks/useEditorState";
+import { useEditorState } from "@/hooks/useEditorState";
 import type { CoordinateConverter } from "@/lib/editor/coordinates";
 import { defaultEditorConfig } from "@/types/editor";
+import { HiddenTextarea } from "./HiddenTextarea";
 
 // Mock child components
 vi.mock("./Gutter", () => ({
@@ -99,7 +100,7 @@ const mockSetCursor = vi.fn();
 const mockSetSelection = vi.fn();
 const mockGetLine = vi.fn((lineNumber: number) => `Line ${lineNumber} content`);
 const mockGetLineCount = vi.fn(() => 10);
-const mockGetLineLength = vi.fn((lineNumber: number) => 20);
+const mockGetLineLength = vi.fn((_lineNumber: number) => 20);
 const mockGetSelectedText = vi.fn(() => "");
 const mockGetContent = vi.fn(() => "test content");
 
@@ -155,7 +156,7 @@ const mockCoordinateConverter: CoordinateConverter = {
 
 vi.mock("@/lib/editor/coordinates", () => ({
     createCoordinateConverter: vi.fn(() => mockCoordinateConverter),
-    pixelToPosition: vi.fn((converter, x, y, scrollTop, scrollLeft, lineCount, getLineLength) => {
+    pixelToPosition: vi.fn((converter, x, y, scrollTop, scrollLeft, lineCount, _getLineLength) => {
         const lineHeight = converter.config.lineHeight;
         const adjustedY = y + scrollTop;
         const line = Math.floor(adjustedY / lineHeight) + 1;
@@ -716,8 +717,6 @@ describe("CodeEditor", () => {
 
             render(<CodeEditor />);
 
-            const textarea = screen.getByTestId("hidden-textarea");
-
             // Check that HiddenTextarea received tabSize=2
             expect(HiddenTextarea).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -1000,8 +999,7 @@ describe("CodeEditor", () => {
             );
         });
 
-        it("should pass correct props to HiddenTextarea", async () => {
-            const { HiddenTextarea } = await import("./HiddenTextarea");
+        it("should pass correct props to HiddenTextarea", () => {
             render(<CodeEditor />);
 
             expect(HiddenTextarea).toHaveBeenCalledWith(
