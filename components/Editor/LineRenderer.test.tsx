@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { LineRenderer } from "./LineRenderer";
 import type { EditorConfig, CursorPosition } from "@/types/editor";
 import type { SearchMatch } from "@/lib/search/findInDocument";
 import { defaultEditorConfig } from "@/types/editor";
 
 describe("LineRenderer", () => {
-    let mockGetLine: ReturnType<typeof vi.fn>;
+    let mockGetLine: any;
     let defaultCursor: CursorPosition;
     let defaultConfig: EditorConfig;
 
@@ -765,7 +765,6 @@ describe("LineRenderer", () => {
                 />,
             );
 
-            const initialCallCount = mockGetLine.mock.calls.length;
             mockGetLine.mockClear();
 
             // Re-render with same version but different cursor

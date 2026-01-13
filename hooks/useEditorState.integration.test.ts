@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useEditorState } from "./useEditorState";
-import type { EditorCommand } from "@/types/editor";
-import { createCursor, createSelection, waitForDebounce } from "@/test/utils/test-helpers";
+import { createCursor, createSelection } from "@/test/utils/test-helpers";
 import { CODE_SAMPLES, LARGE_FILE_SAMPLES } from "@/test/fixtures/code-samples";
 
 /**
@@ -47,7 +46,6 @@ describe("useEditorState - Integration Tests", () => {
             });
 
             const editedContent = result.current.getContent();
-            const cursorPosition = result.current.cursor;
 
             expect(editedContent).toBe("Initial content");
 
@@ -866,8 +864,6 @@ describe("useEditorState - Integration Tests", () => {
             act(() => {
                 result.current.setCursor(createCursor(1, 5));
             });
-
-            const cursorPos = result.current.cursor;
 
             // Switch to another file
             rerender({ content: "File B content" });

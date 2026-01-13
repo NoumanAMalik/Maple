@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useEditorPersistence } from "./useEditorPersistence";
 import "fake-indexeddb/auto";
 import { FileSystem } from "@/lib/storage";

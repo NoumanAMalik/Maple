@@ -3,7 +3,7 @@
 import { useCallback, useState, memo } from "react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { X } from "lucide-react";
+import { X, BookOpen, Code } from "lucide-react";
 import type { EditorTab } from "@/types/workspace";
 
 interface DragState {
@@ -196,6 +196,18 @@ export const TabBar = memo(function TabBar() {
     // Can only drag if there are multiple tabs
     const canDrag = state.tabs.length > 1;
 
+    const isMarkdownFile = (fileName: string): boolean => {
+        return fileName.endsWith(".md") || fileName.endsWith(".markdown");
+    };
+
+    const handleTogglePreview = useCallback(
+        (e: React.MouseEvent, tabId: string) => {
+            e.stopPropagation();
+            dispatch({ type: "TOGGLE_PREVIEW_MODE", payload: { tabId } });
+        },
+        [dispatch],
+    );
+
     if (state.tabs.length === 0) {
         return (
             <div className="flex h-9 items-center border-b border-[var(--ui-border)] bg-[var(--ui-tab-bg)]">
@@ -256,6 +268,22 @@ export const TabBar = memo(function TabBar() {
                                 {tab.fileName}
                                 {tab.isDirty ? " \u2022" : ""}
                             </span>
+
+                            {/* Preview toggle for markdown files */}
+                            {isMarkdownFile(tab.fileName) && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleTogglePreview(e, tab.id)}
+                                    className="flex-shrink-0 rounded p-0.5 transition-colors hover:bg-[var(--ui-border)]"
+                                    aria-label={tab.isPreviewMode ? "Edit markdown" : "Preview markdown"}
+                                >
+                                    {tab.isPreviewMode ? (
+                                        <Code className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <BookOpen className="h-3.5 w-3.5" />
+                                    )}
+                                </button>
+                            )}
 
                             {/* Close button */}
                             <button

@@ -12,6 +12,7 @@ export interface EditorTab {
     isDirty: boolean;
     language: SupportedLanguage | null;
     unsavedContent?: string; // Cache unsaved edits
+    isPreviewMode?: boolean;
 }
 
 /**
@@ -59,7 +60,8 @@ export type WorkspaceAction =
     | { type: "RENAME_NODE"; payload: { nodeId: string; newName: string } }
     | { type: "TOGGLE_DIRECTORY"; payload: { nodeId: string } }
     | { type: "REFRESH_TREE"; payload: { fileTree: TreeNode[] } }
-    | { type: "REORDER_TABS"; payload: { fromIndex: number; toIndex: number } };
+    | { type: "REORDER_TABS"; payload: { fromIndex: number; toIndex: number } }
+    | { type: "TOGGLE_PREVIEW_MODE"; payload: { tabId: string } };
 
 /**
  * Context value exposed to consumers

@@ -249,7 +249,7 @@ export class FileSystem implements FileSystemOperations {
 
     /** Get a file/directory node by ID (for testing) */
     async getNodeById(id: string): Promise<FileNode | null> {
-        return this.storage.get<FileNode>("files", id);
+        return (await this.storage.get<FileNode>("files", id)) ?? null;
     }
 
     /** Get all children of a directory (for testing) */

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { FileSystem } from "./fileSystem";
-import type { FileNode, FileContent } from "@/types/file";
+import type { FileNode } from "@/types/file";
 import "fake-indexeddb/auto";
 
 describe("FileSystem Integration Tests", () => {
@@ -88,7 +88,7 @@ describe("FileSystem Integration Tests", () => {
         it("should correctly list directories at various nesting levels", async () => {
             const level1 = await fs.createDirectory("root", "level1");
             const level2 = await fs.createDirectory(level1.id, "level2");
-            const level3 = await fs.createDirectory(level2.id, "level3");
+            await fs.createDirectory(level2.id, "level3");
 
             await fs.createFile(level1.id, "file1.ts");
             await fs.createFile(level1.id, "file2.ts");
@@ -248,7 +248,7 @@ describe("FileSystem Integration Tests", () => {
             const dir2 = await fs.createDirectory("root", "dir2");
 
             const file1 = await fs.createFile(dir1.id, "file1.ts");
-            const file2 = await fs.createFile(dir2.id, "file2.ts");
+            await fs.createFile(dir2.id, "file2.ts");
 
             // Perform concurrent operations
             await Promise.all([
@@ -539,9 +539,9 @@ describe("FileSystem Integration Tests", () => {
     describe("Directory Rename with Children", () => {
         it("should update all child paths on directory rename", async () => {
             const dir = await fs.createDirectory("root", "olddir");
-            const file1 = await fs.createFile(dir.id, "file1.ts");
-            const file2 = await fs.createFile(dir.id, "file2.ts");
-            const subdir = await fs.createDirectory(dir.id, "subdir");
+            await fs.createFile(dir.id, "file1.ts");
+            await fs.createFile(dir.id, "file2.ts");
+            await fs.createDirectory(dir.id, "subdir");
 
             await fs.renameFile(dir.id, "newdir");
 
@@ -558,7 +558,7 @@ describe("FileSystem Integration Tests", () => {
             const parent = await fs.createDirectory("root", "parent");
             const child = await fs.createDirectory(parent.id, "child");
             const grandchild = await fs.createDirectory(child.id, "grandchild");
-            const file = await fs.createFile(grandchild.id, "deep.ts");
+            await fs.createFile(grandchild.id, "deep.ts");
 
             await fs.renameFile(parent.id, "renamed-parent");
 
@@ -585,7 +585,7 @@ describe("FileSystem Integration Tests", () => {
             const dir2 = await fs.createDirectory("root", "dir2");
 
             const file1 = await fs.createFile(dir1.id, "conflict.ts");
-            const file2 = await fs.createFile(dir2.id, "conflict.ts");
+            await fs.createFile(dir2.id, "conflict.ts");
 
             await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow(
                 "already exists",
@@ -615,7 +615,7 @@ describe("FileSystem Integration Tests", () => {
             const dir2 = await fs.createDirectory("root", "dir2");
 
             const file1 = await fs.createFile(dir1.id, "conflict.ts");
-            const file2 = await fs.createFile(dir2.id, "conflict.ts");
+            await fs.createFile(dir2.id, "conflict.ts");
 
             // Attempt move - fails
             await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow();

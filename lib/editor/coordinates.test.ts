@@ -22,6 +22,10 @@ describe("Coordinates", () => {
             fontFamily: "monospace",
             lineHeight: 20,
             tabSize: 4,
+            wordWrap: false,
+            showLineNumbers: true,
+            showMinimap: false,
+            language: "javascript",
         };
         converter = createCoordinateConverter(config);
         // In test environment (happy-dom), charWidth may be calculated via SSR fallback
@@ -115,8 +119,6 @@ describe("Coordinates", () => {
         });
 
         it("should clamp column to valid range", () => {
-            const { gutterWidth, padding } = converter;
-
             const posLeft = pixelToPosition(converter, 0, 0, 0, 0, 10, getLineLength);
             expect(posLeft.column).toBe(1);
 

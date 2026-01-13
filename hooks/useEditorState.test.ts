@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useEditorState } from "./useEditorState";
-import type { EditorCommand } from "@/types/editor";
 
 describe("useEditorState", () => {
     describe("Initialization", () => {
@@ -920,18 +919,18 @@ describe("useEditorState", () => {
             );
 
             act(() => {
-                result.current.executeCommand({ type: "moveCursor", direction: "wordEnd" });
-            });
+                 result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
+             });
 
-            expect(result.current.cursor.column).toBeGreaterThan(1);
+             expect(result.current.cursor.column).toBeGreaterThan(1);
 
-            act(() => {
-                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 11 } });
-            });
+             act(() => {
+                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 11 } });
+             });
 
-            act(() => {
-                result.current.executeCommand({ type: "moveCursor", direction: "wordEnd" });
-            });
+             act(() => {
+                 result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
+             });
 
             expect(result.current.cursor.line).toBe(2);
         });
@@ -972,15 +971,16 @@ describe("useEditorState", () => {
             );
 
             act(() => {
-                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 6 }, extendSelection: true });
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 6 }, extend: true });
             });
 
             expect(result.current.selection).not.toBeNull();
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
             expect(result.current.selection?.active).toEqual({ line: 1, column: 6 });
-        });
+            });
 
         it("should respect history stack max size (1000 entries)", () => {
+            vi.useFakeTimers();
             const { result } = renderHook(() => useEditorState());
 
             for (let i = 0; i < 1005; i++) {
@@ -996,14 +996,19 @@ describe("useEditorState", () => {
             }
 
             let undoCount = 0;
-            while (result.current.canUndo && undoCount < 2000) {
+            const maxUndos = 2000;
+            while (undoCount < maxUndos) {
+                const contentBefore2 = result.current.getContent();
                 act(() => {
                     result.current.executeCommand({ type: "undo" });
                 });
+                // Stop if content didn't change (no more undo history)
+                if (result.current.getContent() === contentBefore2) break;
                 undoCount++;
             }
 
             expect(undoCount).toBeLessThanOrEqual(1000);
+            vi.useRealTimers();
         });
 
         it("should handle history overflow behavior", () => {
@@ -1021,10 +1026,13 @@ describe("useEditorState", () => {
 
             let undoCount = 0;
             const maxUndos = 1500;
-            while (result.current.canUndo && undoCount < maxUndos) {
+            while (undoCount < maxUndos) {
+                const contentBefore = result.current.getContent();
                 act(() => {
                     result.current.executeCommand({ type: "undo" });
                 });
+                // Stop if content didn't change (no more undo history)
+                if (result.current.getContent() === contentBefore) break;
                 undoCount++;
             }
 
@@ -1076,15 +1084,15 @@ describe("useEditorState", () => {
             });
 
             act(() => {
-                result.current.executeCommand({ type: "moveCursorTo", position: { line: 4, column: 1 }, extendSelection: true });
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 4, column: 1 }, extend: true });
             });
 
             expect(result.current.selection).not.toBeNull();
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
             expect(result.current.selection?.active).toEqual({ line: 4, column: 1 });
-        });
+            });
 
-        it("should handle delete at document start", () => {
+            it("should handle delete at document start", () => {
             const { result } = renderHook(() =>
                 useEditorState({ initialContent: "Hello World" }),
             );
@@ -1094,13 +1102,13 @@ describe("useEditorState", () => {
             });
 
             act(() => {
-                result.current.executeCommand({ type: "delete" });
+                result.current.executeCommand({ type: "deleteForward" });
             });
 
             expect(result.current.getContent()).toBe("Hello World");
-        });
+            });
 
-        it("should handle delete at line boundaries", () => {
+            it("should handle delete at line boundaries", () => {
             const { result } = renderHook(() =>
                 useEditorState({ initialContent: "Line 1\nLine 2" }),
             );
@@ -1110,13 +1118,13 @@ describe("useEditorState", () => {
             });
 
             act(() => {
-                result.current.executeCommand({ type: "delete" });
+                result.current.executeCommand({ type: "deleteForward" });
             });
 
             expect(result.current.getContent()).toBe("Line 1Line 2");
-        });
+            });
 
-        it("should handle backspace at line boundaries", () => {
+            it("should handle backspace at line boundaries", () => {
             const { result } = renderHook(() =>
                 useEditorState({ initialContent: "Line 1\nLine 2" }),
             );
@@ -1126,7 +1134,7 @@ describe("useEditorState", () => {
             });
 
             act(() => {
-                result.current.executeCommand({ type: "delete", forward: false });
+                result.current.executeCommand({ type: "deleteBackward" });
             });
 
             expect(result.current.getContent()).toBe("Line 1Line 2");
