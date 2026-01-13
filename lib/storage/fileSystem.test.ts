@@ -332,12 +332,12 @@ describe("FileSystem", () => {
                 currentParent = dir.id;
             }
 
-            const deepFile = await fs.createFile(currentParent, "deep.ts");
+            await fs.createFile(currentParent, "deep.ts");
             const newRoot = await fs.createDirectory("root", "newRoot");
 
             await fs.moveNode(ids[0], newRoot.id);
 
-            const movedFile = await fs.getNodeById(deepFile.id);
+            const movedFile = await fs.getNodeById(currentParent);
             expect(movedFile?.path).toContain("/newRoot/level0");
         });
 
@@ -347,7 +347,7 @@ describe("FileSystem", () => {
         });
 
         it("should detect path conflicts in edge cases", async () => {
-            const file1 = await fs.createFile("root", "test.ts");
+            await fs.createFile("root", "test.ts");
             const dir = await fs.createDirectory("root", "dir");
             const file2 = await fs.createFile(dir.id, "test.ts");
 

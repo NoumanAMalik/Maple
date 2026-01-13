@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useTabStatePersistence } from "./useTabStatePersistence";
 import "fake-indexeddb/auto";
 import { FileSystem } from "@/lib/storage";

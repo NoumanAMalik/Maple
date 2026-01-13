@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { CodeEditor } from "./CodeEditor";
 import { FindReplace } from "./FindReplace";
+import TufteMarkdown from "@/components/markdown/TufteMarkdown";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useFindReplace } from "@/hooks/useFindReplace";
 import type { CursorPosition } from "@/types/editor";
@@ -155,6 +156,14 @@ export const EditorPane = memo(function EditorPane({
     if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center text-[var(--editor-line-number)]">Loading...</div>
+        );
+    }
+
+    if (tab.isPreviewMode) {
+        return (
+            <div className="h-full w-full overflow-auto bg-[var(--editor-bg)] p-8">
+                <TufteMarkdown markdown={content} className="tufte-content max-w-prose mx-auto" />
+            </div>
         );
     }
 

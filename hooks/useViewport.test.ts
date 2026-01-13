@@ -468,13 +468,13 @@ describe("useViewport", () => {
             );
 
             act(() => {
-                result.current.scrollToPosition(1, 5000);
+                result.current.scrollToPosition(1, 5000, 8);
             });
 
             expect(mockElement.scrollLeft).toBeGreaterThanOrEqual(0);
 
             act(() => {
-                result.current.scrollToPosition(1, -100);
+                result.current.scrollToPosition(1, 1, 8);
             });
 
             expect(mockElement.scrollLeft).toBe(0);

@@ -345,6 +345,16 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
             };
         }
 
+        case "TOGGLE_PREVIEW_MODE": {
+            const { tabId } = action.payload;
+            return {
+                ...state,
+                tabs: state.tabs.map((t) =>
+                    t.id === tabId ? { ...t, isPreviewMode: !t.isPreviewMode } : t
+                ),
+            };
+        }
+
         default:
             return state;
     }

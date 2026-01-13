@@ -11,13 +11,13 @@ function createMockCommand(overrides: Partial<Command> = {}): Command {
         label: overrides.label || "Test Command",
         category: overrides.category || "File",
         shortcut: overrides.shortcut,
-        action: overrides.action || vi.fn(),
+        action: overrides.action || (vi.fn() as () => void),
     };
 }
 
 describe("CommandPalette", () => {
     let mockCommands: Command[];
-    let onCloseMock: ReturnType<typeof vi.fn>;
+    let onCloseMock: () => void;
 
     beforeEach(() => {
         // Clear registry before each test

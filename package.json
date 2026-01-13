@@ -23,7 +23,10 @@
         "next": "16.1.1",
         "react": "19.2.3",
         "react-dom": "19.2.3",
-        "tailwind-merge": "^3.4.0"
+        "react-markdown": "^10.1.0",
+        "remark-directive": "^4.0.0",
+        "tailwind-merge": "^3.4.0",
+        "unist-util-visit": "^5.0.0"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.3.10",
@@ -31,6 +34,7 @@
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@testing-library/user-event": "^14.6.1",
+        "@types/mdast": "^4.0.4",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
@@ -39,6 +43,7 @@
         "babel-plugin-react-compiler": "1.0.0",
         "fake-indexeddb": "^6.2.5",
         "happy-dom": "^20.0.11",
+        "mdast-util-directive": "^3.1.0",
         "tailwindcss": "^4",
         "tinybench": "^6.0.0",
         "typescript": "^5",
