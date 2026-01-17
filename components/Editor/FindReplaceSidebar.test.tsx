@@ -645,13 +645,7 @@ describe("FindReplaceSidebar", () => {
             expect(onNavigateToMatch).toHaveBeenCalledWith(1, 1);
 
             // Update to second match
-            rerender(
-                <FindReplaceSidebar
-                    {...props}
-                    currentMatchIndex={1}
-                    onNavigateToMatch={onNavigateToMatch}
-                />,
-            );
+            rerender(<FindReplaceSidebar {...props} currentMatchIndex={1} onNavigateToMatch={onNavigateToMatch} />);
 
             // Should navigate to second match
             expect(onNavigateToMatch).toHaveBeenCalledWith(2, 1);

@@ -18,14 +18,17 @@
         "test:bench": "vitest bench"
     },
     "dependencies": {
+        "@react-three/fiber": "^9.5.0",
         "clsx": "^2.1.1",
         "lucide-react": "^0.562.0",
         "next": "16.1.1",
+        "postprocessing": "^6.38.2",
         "react": "19.2.3",
         "react-dom": "19.2.3",
         "react-markdown": "^10.1.0",
         "remark-directive": "^4.0.0",
         "tailwind-merge": "^3.4.0",
+        "three": "^0.182.0",
         "unist-util-visit": "^5.0.0"
     },
     "devDependencies": {
@@ -38,6 +41,7 @@
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+        "@types/three": "^0.182.0",
         "@vitest/coverage-v8": "^4.0.16",
         "@vitest/ui": "^4.0.16",
         "babel-plugin-react-compiler": "1.0.0",

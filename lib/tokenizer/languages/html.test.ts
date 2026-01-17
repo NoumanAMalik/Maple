@@ -10,31 +10,31 @@ const INITIAL_STATE: LineState = {
 describe("HTML Tokenizer", () => {
     describe("Void Elements", () => {
         it("should tokenize <area>", () => {
-            const result = htmlTokenizer.tokenizeLine("<area shape=\"rect\" coords=\"0,0,100,100\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<area shape="rect" coords="0,0,100,100">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize <base>", () => {
-            const result = htmlTokenizer.tokenizeLine("<base href=\"https://example.com\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<base href="https://example.com">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize <col>", () => {
-            const result = htmlTokenizer.tokenizeLine("<col span=\"2\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<col span="2">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize <link>", () => {
-            const result = htmlTokenizer.tokenizeLine("<link rel=\"stylesheet\" href=\"styles.css\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<link rel="stylesheet" href="styles.css">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize <meta>", () => {
-            const result = htmlTokenizer.tokenizeLine("<meta charset=\"UTF-8\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<meta charset="UTF-8">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
@@ -52,13 +52,13 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize <img>", () => {
-            const result = htmlTokenizer.tokenizeLine("<img src=\"image.png\" alt=\"description\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<img src="image.png" alt="description">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize <input>", () => {
-            const result = htmlTokenizer.tokenizeLine("<input type=\"text\" name=\"username\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<input type="text" name="username">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
@@ -82,13 +82,13 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize self-closing <img />", () => {
-            const result = htmlTokenizer.tokenizeLine("<img src=\"image.png\" />", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<img src="image.png" />', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
 
         it("should tokenize self-closing <input />", () => {
-            const result = htmlTokenizer.tokenizeLine("<input type=\"text\" />", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<input type="text" />', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
@@ -138,7 +138,10 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize multiple data attributes", () => {
-            const result = htmlTokenizer.tokenizeLine('<div data-id="123" data-name="foo" data-active="true">', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine(
+                '<div data-id="123" data-name="foo" data-active="true">',
+                INITIAL_STATE,
+            );
             const attrTokens = result.tokens.filter((t) => t.type === "attribute");
             expect(attrTokens.length).toBe(3);
         });
@@ -162,7 +165,10 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize multiple attributes with mixed quotes", () => {
-            const result = htmlTokenizer.tokenizeLine('<input type="text" name=\'username\' placeholder=hint disabled>', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine(
+                "<input type=\"text\" name='username' placeholder=hint disabled>",
+                INITIAL_STATE,
+            );
             const attrTokens = result.tokens.filter((t) => t.type === "attribute");
             expect(attrTokens.length).toBe(4);
         });
@@ -220,7 +226,10 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize legacy DOCTYPE", () => {
-            const result = htmlTokenizer.tokenizeLine('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine(
+                '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">',
+                INITIAL_STATE,
+            );
             const keywordToken = result.tokens.find((t) => t.type === "keyword");
             expect(keywordToken).toBeDefined();
         });
@@ -242,14 +251,20 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should continue multi-line comment", () => {
-            const result = htmlTokenizer.tokenizeLine("middle of comment", { kind: "block-comment", templateExpressionDepth: 0 });
+            const result = htmlTokenizer.tokenizeLine("middle of comment", {
+                kind: "block-comment",
+                templateExpressionDepth: 0,
+            });
             const commentToken = result.tokens.find((t) => t.type === "comment");
             expect(commentToken).toBeDefined();
             expect(result.endState.kind).toBe("block-comment");
         });
 
         it("should close multi-line comment", () => {
-            const result = htmlTokenizer.tokenizeLine("end of comment -->", { kind: "block-comment", templateExpressionDepth: 0 });
+            const result = htmlTokenizer.tokenizeLine("end of comment -->", {
+                kind: "block-comment",
+                templateExpressionDepth: 0,
+            });
             const commentToken = result.tokens.find((t) => t.type === "comment");
             expect(commentToken).toBeDefined();
             expect(result.endState.kind).toBe("normal");
@@ -314,7 +329,7 @@ describe("HTML Tokenizer", () => {
 
     describe("Unclosed Tags", () => {
         it("should handle unclosed opening tag", () => {
-            const result = htmlTokenizer.tokenizeLine("<div class=\"foo\"", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<div class="foo"', INITIAL_STATE);
             expect(result.tokens.length).toBeGreaterThan(0);
         });
 
@@ -333,7 +348,7 @@ describe("HTML Tokenizer", () => {
 
     describe("Malformed HTML", () => {
         it("should handle missing closing bracket", () => {
-            const result = htmlTokenizer.tokenizeLine("<div class=\"foo\"", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<div class="foo"', INITIAL_STATE);
             expect(result.tokens.length).toBeGreaterThan(0);
         });
 
@@ -344,7 +359,7 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should handle mismatched quotes", () => {
-            const result = htmlTokenizer.tokenizeLine('<div class="value\'>', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine("<div class=\"value'>", INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
@@ -369,7 +384,7 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should tokenize <span> tag", () => {
-            const result = htmlTokenizer.tokenizeLine("<span class=\"highlight\">", INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine('<span class="highlight">', INITIAL_STATE);
             const tagToken = result.tokens.find((t) => t.type === "tag");
             expect(tagToken).toBeDefined();
         });
@@ -421,13 +436,19 @@ describe("HTML Tokenizer", () => {
         });
 
         it("should handle tags with multiple attributes", () => {
-            const result = htmlTokenizer.tokenizeLine('<div id="main" class="container" data-value="123" style="color: red;">', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine(
+                '<div id="main" class="container" data-value="123" style="color: red;">',
+                INITIAL_STATE,
+            );
             const attrTokens = result.tokens.filter((t) => t.type === "attribute");
             expect(attrTokens.length).toBe(4);
         });
 
         it("should handle mixed content", () => {
-            const result = htmlTokenizer.tokenizeLine('<!-- Comment --> <div class="test">Text &nbsp; Entity</div>', INITIAL_STATE);
+            const result = htmlTokenizer.tokenizeLine(
+                '<!-- Comment --> <div class="test">Text &nbsp; Entity</div>',
+                INITIAL_STATE,
+            );
             const commentToken = result.tokens.find((t) => t.type === "comment");
             const tagTokens = result.tokens.filter((t) => t.type === "tag");
             const constantToken = result.tokens.find((t) => t.type === "constant");

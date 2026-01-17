@@ -17,10 +17,12 @@ export default function TufteMarkdown({ markdown, className }: TufteMarkdownProp
         <article className={className}>
             <ReactMarkdown
                 remarkPlugins={[remarkDirective, remarkTufteNotes]}
-                components={{
-                    sidenote: TufteSidenote as Components["div"],
-                    marginnote: TufteMarginnote as Components["div"],
-                } as Partial<Components>}
+                components={
+                    {
+                        sidenote: TufteSidenote as Components["div"],
+                        marginnote: TufteMarginnote as Components["div"],
+                    } as Partial<Components>
+                }
             >
                 {markdown}
             </ReactMarkdown>

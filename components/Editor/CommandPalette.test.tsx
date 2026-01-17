@@ -480,10 +480,13 @@ describe("CommandPalette", () => {
             rerender(<CommandPalette isOpen={false} onClose={onCloseMock} />);
 
             // Wait for closing animation to start
-            await waitFor(() => {
-                const backdrop = screen.getByRole("dialog").previousElementSibling;
-                expect(backdrop).toHaveClass("animate-fadeOut");
-            }, { timeout: 1000 });
+            await waitFor(
+                () => {
+                    const backdrop = screen.getByRole("dialog").previousElementSibling;
+                    expect(backdrop).toHaveClass("animate-fadeOut");
+                },
+                { timeout: 1000 },
+            );
 
             const modal = screen.getByRole("dialog").parentElement;
             const modalContent = within(modal as HTMLElement).getByRole("dialog");
@@ -500,9 +503,12 @@ describe("CommandPalette", () => {
             rerender(<CommandPalette isOpen={false} onClose={onCloseMock} />);
 
             // Should be completely removed from DOM after animation
-            await waitFor(() => {
-                expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-            }, { timeout: 1000 });
+            await waitFor(
+                () => {
+                    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+                },
+                { timeout: 1000 },
+            );
         });
     });
 

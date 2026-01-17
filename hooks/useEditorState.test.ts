@@ -15,9 +15,7 @@ describe("useEditorState", () => {
         });
 
         it("should initialize with provided content", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello\nWorld" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello\nWorld" }));
 
             expect(result.current.getContent()).toBe("Hello\nWorld");
             expect(result.current.getLineCount()).toBe(2);
@@ -65,9 +63,7 @@ describe("useEditorState", () => {
         });
 
         it("should replace selection when inserting", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 // Select "World"
@@ -102,9 +98,7 @@ describe("useEditorState", () => {
 
     describe("Text Deletion", () => {
         it("should delete backward (backspace)", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 6 });
@@ -119,9 +113,7 @@ describe("useEditorState", () => {
         });
 
         it("should not delete backward at start of document", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -135,9 +127,7 @@ describe("useEditorState", () => {
         });
 
         it("should delete forward (delete key)", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -152,9 +142,7 @@ describe("useEditorState", () => {
         });
 
         it("should delete selection with deleteBackward", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -172,9 +160,7 @@ describe("useEditorState", () => {
         });
 
         it("should delete selection with deleteForward", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -197,9 +183,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor left", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 5 });
@@ -213,9 +197,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor right", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -229,9 +211,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor up", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.setCursor({ line: 2, column: 1 });
@@ -245,9 +225,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor down", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -261,9 +239,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor to line start", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 7 });
@@ -277,9 +253,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor to line end", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -293,9 +267,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor to document start", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             act(() => {
                 result.current.setCursor({ line: 3, column: 5 });
@@ -309,9 +281,7 @@ describe("useEditorState", () => {
         });
 
         it("should move cursor to document end", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -325,9 +295,7 @@ describe("useEditorState", () => {
         });
 
         it("should wrap cursor to previous line when moving left at line start", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.setCursor({ line: 2, column: 1 });
@@ -341,9 +309,7 @@ describe("useEditorState", () => {
         });
 
         it("should wrap cursor to next line when moving right at line end", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 7 });
@@ -357,9 +323,7 @@ describe("useEditorState", () => {
         });
 
         it("should move by word left", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World Test" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 17 });
@@ -373,9 +337,7 @@ describe("useEditorState", () => {
         });
 
         it("should move by word right", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World Test" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -391,9 +353,7 @@ describe("useEditorState", () => {
 
     describe("Selection", () => {
         it("should extend selection when moving with extend flag", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -413,9 +373,7 @@ describe("useEditorState", () => {
         });
 
         it("should clear selection when moving without extend", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -432,9 +390,7 @@ describe("useEditorState", () => {
         });
 
         it("should select all text", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             act(() => {
                 result.current.executeCommand({ type: "selectAll" });
@@ -446,9 +402,7 @@ describe("useEditorState", () => {
         });
 
         it("should get selected text", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -461,17 +415,13 @@ describe("useEditorState", () => {
         });
 
         it("should return empty string when no selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             expect(result.current.getSelectedText()).toBe("");
         });
 
         it("should handle moveCursorTo command", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.executeCommand({
@@ -484,9 +434,7 @@ describe("useEditorState", () => {
         });
 
         it("should extend selection with moveCursorTo", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setCursor({ line: 1, column: 1 });
@@ -632,9 +580,7 @@ describe("useEditorState", () => {
         });
 
         it("should handle cut command with selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -652,9 +598,7 @@ describe("useEditorState", () => {
         });
 
         it("should do nothing on cut without selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.executeCommand({ type: "cut" });
@@ -666,34 +610,26 @@ describe("useEditorState", () => {
 
     describe("Query Methods", () => {
         it("should get content", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             expect(result.current.getContent()).toBe("Hello World");
         });
 
         it("should get line", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             expect(result.current.getLine(1)).toBe("Line 1");
             expect(result.current.getLine(2)).toBe("Line 2");
         });
 
         it("should get line count", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             expect(result.current.getLineCount()).toBe(3);
         });
 
         it("should get line length", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             expect(result.current.getLineLength(1)).toBe(5);
         });
@@ -701,10 +637,9 @@ describe("useEditorState", () => {
 
     describe("Tab Switching", () => {
         it("should reset state when initialContent changes to different content", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "Original" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "Original" },
+            });
 
             // Move cursor to end before inserting
             act(() => {
@@ -726,10 +661,9 @@ describe("useEditorState", () => {
         });
 
         it("should not reset when initialContent matches current buffer", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "Test" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "Test" },
+            });
 
             // Move cursor to end before inserting
             act(() => {
@@ -765,9 +699,7 @@ describe("useEditorState", () => {
         });
 
         it("should increment version on cursor movement", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             const initialVersion = result.current.version;
 
@@ -781,9 +713,7 @@ describe("useEditorState", () => {
 
     describe("Cursor Clamping", () => {
         it("should clamp cursor to document bounds", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor({ line: 10, column: 50 });
@@ -794,9 +724,7 @@ describe("useEditorState", () => {
         });
 
         it("should clamp cursor to line bounds", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Short\nVery long line here" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Short\nVery long line here" }));
 
             // Move to long line
             act(() => {
@@ -824,25 +752,19 @@ describe("useEditorState", () => {
 
         it("should handle very long content", () => {
             const longContent = "x".repeat(10000);
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: longContent }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: longContent }));
 
             expect(result.current.getContent().length).toBe(10000);
         });
 
         it("should handle unicode content", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello 世界 🌍" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello 世界 🌍" }));
 
             expect(result.current.getContent()).toBe("Hello 世界 🌍");
         });
 
         it("should handle deleteSelection command", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection({
@@ -859,9 +781,7 @@ describe("useEditorState", () => {
         });
 
         it("should handle deleteSelection with no selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.executeCommand({ type: "deleteSelection" });
@@ -873,10 +793,9 @@ describe("useEditorState", () => {
 
     describe("Branch Coverage Tests", () => {
         it("should detect tab switching when initialContent changes", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "First tab" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "First tab" },
+            });
 
             expect(result.current.getContent()).toBe("First tab");
 
@@ -914,31 +833,27 @@ describe("useEditorState", () => {
         });
 
         it("should handle word navigation at line boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "First line\nSecond line" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "First line\nSecond line" }));
 
             act(() => {
-                 result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
-             });
+                result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
+            });
 
-             expect(result.current.cursor.column).toBeGreaterThan(1);
+            expect(result.current.cursor.column).toBeGreaterThan(1);
 
-             act(() => {
-                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 11 } });
-             });
+            act(() => {
+                result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 11 } });
+            });
 
-             act(() => {
-                 result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
-             });
+            act(() => {
+                result.current.executeCommand({ type: "moveCursor", direction: "wordRight" });
+            });
 
             expect(result.current.cursor.line).toBe(2);
         });
 
         it("should clamp cursor at document edges", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 0, column: 0 } });
@@ -966,9 +881,7 @@ describe("useEditorState", () => {
         });
 
         it("should handle moveCursorTo with extend selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 6 }, extend: true });
@@ -977,7 +890,7 @@ describe("useEditorState", () => {
             expect(result.current.selection).not.toBeNull();
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
             expect(result.current.selection?.active).toEqual({ line: 1, column: 6 });
-            });
+        });
 
         it("should respect history stack max size (1000 entries)", () => {
             vi.useFakeTimers();
@@ -1042,9 +955,7 @@ describe("useEditorState", () => {
 
         it("should handle select all with large document", () => {
             const largeContent = Array.from({ length: 1000 }, (_, i) => `Line ${i + 1}`).join("\n");
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: largeContent }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: largeContent }));
 
             act(() => {
                 result.current.executeCommand({ type: "selectAll" });
@@ -1057,9 +968,7 @@ describe("useEditorState", () => {
 
         it("should handle cursor movement with very long lines", () => {
             const longLine = "a".repeat(10000);
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: longLine }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: longLine }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 5000 } });
@@ -1075,9 +984,7 @@ describe("useEditorState", () => {
         });
 
         it("should handle selection across multiple lines with extend", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3\nLine 4" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3\nLine 4" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 1 } });
@@ -1090,12 +997,10 @@ describe("useEditorState", () => {
             expect(result.current.selection).not.toBeNull();
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
             expect(result.current.selection?.active).toEqual({ line: 4, column: 1 });
-            });
+        });
 
-            it("should handle delete at document start", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+        it("should handle delete at document start", () => {
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 1 } });
@@ -1106,12 +1011,10 @@ describe("useEditorState", () => {
             });
 
             expect(result.current.getContent()).toBe("Hello World");
-            });
+        });
 
-            it("should handle delete at line boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+        it("should handle delete at line boundaries", () => {
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 1, column: 7 } });
@@ -1122,12 +1025,10 @@ describe("useEditorState", () => {
             });
 
             expect(result.current.getContent()).toBe("Line 1Line 2");
-            });
+        });
 
-            it("should handle backspace at line boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2" }),
-            );
+        it("should handle backspace at line boundaries", () => {
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2" }));
 
             act(() => {
                 result.current.executeCommand({ type: "moveCursorTo", position: { line: 2, column: 1 } });

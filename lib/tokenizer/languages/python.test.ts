@@ -106,14 +106,20 @@ describe("Python Tokenizer", () => {
         });
 
         it("should continue triple-quoted string across lines", () => {
-            const result = pythonTokenizer.tokenizeLine("middle of string", { kind: "triple-string", templateExpressionDepth: 1 });
+            const result = pythonTokenizer.tokenizeLine("middle of string", {
+                kind: "triple-string",
+                templateExpressionDepth: 1,
+            });
             const stringToken = result.tokens.find((t) => t.type === "string");
             expect(stringToken).toBeDefined();
             expect(result.endState.kind).toBe("triple-string");
         });
 
         it("should close triple-quoted string", () => {
-            const result = pythonTokenizer.tokenizeLine('end"""', { kind: "triple-string", templateExpressionDepth: 1 });
+            const result = pythonTokenizer.tokenizeLine('end"""', {
+                kind: "triple-string",
+                templateExpressionDepth: 1,
+            });
             const stringToken = result.tokens.find((t) => t.type === "string");
             expect(stringToken).toBeDefined();
             expect(result.endState.kind).toBe("normal");
@@ -227,7 +233,10 @@ describe("Python Tokenizer", () => {
         });
 
         it("should tokenize dict type hints", () => {
-            const result = pythonTokenizer.tokenizeLine("def foo(data: Dict[str, int]) -> Dict[str, int]:", INITIAL_STATE);
+            const result = pythonTokenizer.tokenizeLine(
+                "def foo(data: Dict[str, int]) -> Dict[str, int]:",
+                INITIAL_STATE,
+            );
             const defToken = result.tokens.find((t) => t.type === "keyword");
             expect(defToken).toBeDefined();
         });

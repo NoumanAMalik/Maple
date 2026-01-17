@@ -18,31 +18,22 @@ describe("JavaScript Tokenizer Performance", () => {
     });
 
     bench("tokenize medium line", () => {
-        javascriptTokenizer.tokenizeLine(
-            'import { useState, useEffect } from "react";',
-            INITIAL_STATE,
-        );
+        javascriptTokenizer.tokenizeLine('import { useState, useEffect } from "react";', INITIAL_STATE);
     });
 
     bench("tokenize long line", () => {
         javascriptTokenizer.tokenizeLine(
-            'const result = data.filter(x => x.value > 0).map(x => ({ ...x, processed: true })).reduce((acc, val) => acc + val.amount, 0);',
+            "const result = data.filter(x => x.value > 0).map(x => ({ ...x, processed: true })).reduce((acc, val) => acc + val.amount, 0);",
             INITIAL_STATE,
         );
     });
 
     bench("tokenize with template string", () => {
-        javascriptTokenizer.tokenizeLine(
-            'const msg = `Hello ${user.name}, you have ${count} items`;',
-            INITIAL_STATE,
-        );
+        javascriptTokenizer.tokenizeLine("const msg = `Hello ${user.name}, you have ${count} items`;", INITIAL_STATE);
     });
 
     bench("tokenize with comments", () => {
-        javascriptTokenizer.tokenizeLine(
-            "const x = 1; // This is a comment about the variable",
-            INITIAL_STATE,
-        );
+        javascriptTokenizer.tokenizeLine("const x = 1; // This is a comment about the variable", INITIAL_STATE);
     });
 
     bench("tokenize 100 lines", () => {
@@ -86,10 +77,7 @@ describe("CSS Tokenizer Performance", () => {
     });
 
     bench("tokenize with function", () => {
-        cssTokenizer.tokenizeLine(
-            "background: linear-gradient(45deg, #FF6B6B, #4ECDC4);",
-            INITIAL_STATE,
-        );
+        cssTokenizer.tokenizeLine("background: linear-gradient(45deg, #FF6B6B, #4ECDC4);", INITIAL_STATE);
     });
 
     bench("tokenize media query", () => {
@@ -109,10 +97,7 @@ describe("HTML Tokenizer Performance", () => {
     });
 
     bench("tokenize tag with attributes", () => {
-        htmlTokenizer.tokenizeLine(
-            '<div class="container" id="main" data-value="123">',
-            INITIAL_STATE,
-        );
+        htmlTokenizer.tokenizeLine('<div class="container" id="main" data-value="123">', INITIAL_STATE);
     });
 
     bench("tokenize self-closing tag", () => {
@@ -168,10 +153,7 @@ describe("JSON Tokenizer Performance", () => {
     });
 
     bench("tokenize complex value", () => {
-        jsonTokenizer.tokenizeLine(
-            '  "data": { "nested": [1, 2, 3], "flag": false },',
-            INITIAL_STATE,
-        );
+        jsonTokenizer.tokenizeLine('  "data": { "nested": [1, 2, 3], "flag": false },', INITIAL_STATE);
     });
 
     bench("tokenize 100 lines", () => {
@@ -215,14 +197,7 @@ describe("DocumentState Performance", () => {
     });
 
     bench("update with multiline state change", () => {
-        const lines = [
-            "const x = 1;",
-            "const y = 2;",
-            "/*",
-            " * comment",
-            " */",
-            "const z = 3;",
-        ];
+        const lines = ["const x = 1;", "const y = 2;", "/*", " * comment", " */", "const z = 3;"];
         let getLine = (lineNumber: number) => lines[lineNumber - 1];
 
         const state = createDocumentHighlightState("javascript", getLine, lines.length, 1);

@@ -211,7 +211,10 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
             const { tabId } = action.payload;
             console.log("[CLOSE_TAB] Closing tab:", tabId);
             const newTabs = state.tabs.filter((t) => t.id !== tabId);
-            console.log("[CLOSE_TAB] Remaining tabs:", newTabs.map((t) => t.fileName));
+            console.log(
+                "[CLOSE_TAB] Remaining tabs:",
+                newTabs.map((t) => t.fileName),
+            );
 
             // If closing active tab, activate the next or previous tab
             let newActiveTabId = state.activeTabId;
@@ -349,9 +352,7 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
             const { tabId } = action.payload;
             return {
                 ...state,
-                tabs: state.tabs.map((t) =>
-                    t.id === tabId ? { ...t, isPreviewMode: !t.isPreviewMode } : t
-                ),
+                tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isPreviewMode: !t.isPreviewMode } : t)),
             };
         }
 

@@ -77,7 +77,8 @@ describe("FileSystem Integration Tests", () => {
 
             // Verify the deepest level has correct path
             const deepestLevel = levels[11];
-            const expectedPath = "/level1/level2/level3/level4/level5/level6/level7/level8/level9/level10/level11/level12";
+            const expectedPath =
+                "/level1/level2/level3/level4/level5/level6/level7/level8/level9/level10/level11/level12";
             expect(deepestLevel.path).toBe(expectedPath);
 
             // Create a file at the deepest level
@@ -357,9 +358,7 @@ describe("FileSystem Integration Tests", () => {
         it("should prevent duplicate names in same directory", async () => {
             await fs.createFile("root", "duplicate.ts");
 
-            await expect(fs.createFile("root", "duplicate.ts")).rejects.toThrow(
-                "already exists",
-            );
+            await expect(fs.createFile("root", "duplicate.ts")).rejects.toThrow("already exists");
         });
 
         it("should allow same name in different directories", async () => {
@@ -381,9 +380,7 @@ describe("FileSystem Integration Tests", () => {
             const file1 = await fs.createFile(dir1.id, "conflict.ts");
             const file2 = await fs.createFile(dir2.id, "conflict.ts");
 
-            await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow(
-                "already exists",
-            );
+            await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow("already exists");
 
             // Files should remain in original locations
             const check1 = await fs.readFile(file1.id);
@@ -479,10 +476,7 @@ describe("FileSystem Integration Tests", () => {
             ]);
 
             // Move files around
-            await Promise.all([
-                fs.moveNode(files[0].id, dir2.id),
-                fs.moveNode(files[2].id, dir3.id),
-            ]);
+            await Promise.all([fs.moveNode(files[0].id, dir2.id), fs.moveNode(files[2].id, dir3.id)]);
 
             // Verify tree consistency
             const tree = await fs.getFileTree();
@@ -587,9 +581,7 @@ describe("FileSystem Integration Tests", () => {
             const file1 = await fs.createFile(dir1.id, "conflict.ts");
             await fs.createFile(dir2.id, "conflict.ts");
 
-            await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow(
-                "already exists",
-            );
+            await expect(fs.moveNode(file1.id, dir2.id)).rejects.toThrow("already exists");
         });
 
         it("should suggest resolution for conflicts", async () => {
@@ -783,10 +775,7 @@ describe("FileSystem Integration Tests", () => {
             const file4 = await fs.createFile("root", "index.ts");
 
             // Save complex tab state
-            await fs.saveTabState(
-                [file1.id, file2.id, file3.id, file4.id],
-                file2.id,
-            );
+            await fs.saveTabState([file1.id, file2.id, file3.id, file4.id], file2.id);
 
             // Move a file
             await fs.moveNode(file2.id, components.id);
@@ -812,9 +801,7 @@ describe("FileSystem Integration Tests", () => {
             const filePromises = [];
             for (let i = 0; i < 50; i++) {
                 const dirIndex = i % 4;
-                filePromises.push(
-                    fs.createFile(dirs[dirIndex].id, `file${i}.ts`, `content ${i}`),
-                );
+                filePromises.push(fs.createFile(dirs[dirIndex].id, `file${i}.ts`, `content ${i}`));
             }
             const files = await Promise.all(filePromises);
 

@@ -338,7 +338,7 @@ describe("LineRenderer", () => {
 
         it("should render line with mixed tokens", () => {
             mockGetLine = vi.fn((lineNumber: number) => {
-                if (lineNumber === 4) return 'const x = 123; // comment';
+                if (lineNumber === 4) return "const x = 123; // comment";
                 return `Line ${lineNumber}`;
             });
 
