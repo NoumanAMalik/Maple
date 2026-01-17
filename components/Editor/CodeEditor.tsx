@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback, useMemo, useEffect, type MouseEvent } from "react";
 import { useEditorState } from "@/hooks/useEditorState";
 import { useViewport } from "@/hooks/useViewport";
+import { useDocumentHighlighting } from "@/hooks/useDocumentHighlighting";
 import { Gutter } from "./Gutter";
 import { LineRenderer } from "./LineRenderer";
 import { CursorRenderer } from "./CursorRenderer";
@@ -61,6 +62,16 @@ export function CodeEditor({
         containerRef: scrollContainerRef,
         lineCount: editor.getLineCount(),
         lineHeight: editor.config.lineHeight,
+    });
+
+    // Document highlighting for syntax tokens
+    const highlighting = useDocumentHighlighting({
+        language: editor.config.language,
+        getLine: editor.getLine,
+        getLineCount: editor.getLineCount,
+        version: editor.version,
+        getEditMetadata: editor.getEditMetadata,
+        clearEditMetadata: editor.clearEditMetadata,
     });
 
     // Coordinate converter for mouse handling
@@ -298,7 +309,7 @@ export function CodeEditor({
                             config={editor.config}
                         />
 
-                        {/* Lines (plain text - no syntax highlighting) */}
+                        {/* Lines with syntax highlighting */}
                         <LineRenderer
                             getLine={editor.getLine}
                             lineCount={editor.getLineCount()}
@@ -309,6 +320,7 @@ export function CodeEditor({
                             version={editor.version}
                             searchMatches={searchMatches}
                             currentMatchIndex={currentMatchIndex}
+                            getTokens={highlighting.getTokens}
                         />
 
                         {/* Cursor */}

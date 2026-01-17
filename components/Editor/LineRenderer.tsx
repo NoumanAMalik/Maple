@@ -24,6 +24,8 @@ interface LineRendererProps {
     searchMatches?: SearchMatch[];
     /** Current match index for highlighting */
     currentMatchIndex?: number;
+    /** Function to get tokens for a line */
+    getTokens?: (lineNumber: number) => import("@/lib/tokenizer/types").Token[];
 }
 
 /**
@@ -40,6 +42,7 @@ export function LineRenderer({
     version,
     searchMatches,
     currentMatchIndex,
+    getTokens,
 }: LineRendererProps) {
     // Build array of visible lines with their content and matches
     // Note: version is in deps to force rebuild when content changes
@@ -49,6 +52,7 @@ export function LineRenderer({
             content: string;
             isCurrent: boolean;
             matches: Array<{ column: number; length: number; isCurrent: boolean }>;
+            tokens?: import("@/lib/tokenizer/types").Token[];
         }> = [];
 
         // Clamp the range to valid line numbers
@@ -78,12 +82,13 @@ export function LineRenderer({
                 content,
                 isCurrent: i === cursor.line,
                 matches: lineMatches,
+                tokens: getTokens?.(i),
             });
         }
 
         return lines;
-        // Note: getLine intentionally omitted from deps - version change triggers recompute,
-        // and the fresh getLine from closure will be used
+        // Note: getLine and getTokens intentionally omitted from deps - version change triggers recompute,
+        // and the fresh functions from closure will be used
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lineCount, firstVisibleLine, lastVisibleLine, cursor.line, version, searchMatches, currentMatchIndex]);
 
@@ -122,6 +127,7 @@ export function LineRenderer({
                         content={line.content}
                         isCurrent={line.isCurrent}
                         config={config}
+                        tokens={line.tokens}
                         matches={line.matches.length > 0 ? line.matches : undefined}
                     />
                 ))}

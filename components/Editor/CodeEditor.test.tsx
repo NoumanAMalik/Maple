@@ -104,6 +104,9 @@ const mockGetLineLength = vi.fn((_lineNumber: number) => 20);
 const mockGetSelectedText = vi.fn(() => "");
 const mockGetContent = vi.fn(() => "test content");
 
+const mockGetEditMetadata = vi.fn(() => null);
+const mockClearEditMetadata = vi.fn();
+
 const mockEditorState: EditorStateAPI = {
     cursor: { line: 1, column: 1 },
     selection: null,
@@ -118,6 +121,8 @@ const mockEditorState: EditorStateAPI = {
     executeCommand: mockExecuteCommand,
     setCursor: mockSetCursor,
     setSelection: mockSetSelection,
+    getEditMetadata: mockGetEditMetadata,
+    clearEditMetadata: mockClearEditMetadata,
 };
 
 vi.mock("@/hooks/useEditorState", () => ({
