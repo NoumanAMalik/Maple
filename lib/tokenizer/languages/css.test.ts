@@ -10,13 +10,19 @@ const INITIAL_STATE: LineState = {
 describe("CSS Tokenizer", () => {
     describe("At-Rules", () => {
         it("should tokenize @media with complex queries", () => {
-            const result = cssTokenizer.tokenizeLine("@media (min-width: 768px) and (max-width: 1024px) {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine(
+                "@media (min-width: 768px) and (max-width: 1024px) {",
+                INITIAL_STATE,
+            );
             const keyword = result.tokens.find((t) => t.type === "keyword");
             expect(keyword).toBeDefined();
         });
 
         it("should tokenize @keyframes with percentage values", () => {
-            const result = cssTokenizer.tokenizeLine("@keyframes slide { 0% { left: 0; } 100% { left: 100%; } }", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine(
+                "@keyframes slide { 0% { left: 0; } 100% { left: 100%; } }",
+                INITIAL_STATE,
+            );
             const keyword = result.tokens.find((t) => t.type === "keyword");
             expect(keyword).toBeDefined();
         });
@@ -46,7 +52,7 @@ describe("CSS Tokenizer", () => {
         });
 
         it("should tokenize @charset", () => {
-            const result = cssTokenizer.tokenizeLine("@charset \"UTF-8\";", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('@charset "UTF-8";', INITIAL_STATE);
             const keyword = result.tokens.find((t) => t.type === "keyword");
             expect(keyword).toBeDefined();
         });
@@ -96,13 +102,19 @@ describe("CSS Tokenizer", () => {
         });
 
         it("should tokenize linear-gradient() with multiple stops", () => {
-            const result = cssTokenizer.tokenizeLine("background: linear-gradient(to right, red, yellow, green);", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine(
+                "background: linear-gradient(to right, red, yellow, green);",
+                INITIAL_STATE,
+            );
             const funcToken = result.tokens.find((t) => t.type === "function");
             expect(funcToken).toBeDefined();
         });
 
         it("should tokenize radial-gradient() with positions", () => {
-            const result = cssTokenizer.tokenizeLine("background: radial-gradient(circle at center, red 0%, blue 100%);", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine(
+                "background: radial-gradient(circle at center, red 0%, blue 100%);",
+                INITIAL_STATE,
+            );
             const funcToken = result.tokens.find((t) => t.type === "function");
             expect(funcToken).toBeDefined();
         });
@@ -138,7 +150,10 @@ describe("CSS Tokenizer", () => {
         });
 
         it("should tokenize transform functions", () => {
-            const result = cssTokenizer.tokenizeLine("transform: translateX(10px) rotate(45deg) scale(1.5);", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine(
+                "transform: translateX(10px) rotate(45deg) scale(1.5);",
+                INITIAL_STATE,
+            );
             const funcTokens = result.tokens.filter((t) => t.type === "function");
             expect(funcTokens.length).toBeGreaterThanOrEqual(3);
         });
@@ -152,31 +167,31 @@ describe("CSS Tokenizer", () => {
         });
 
         it("should tokenize attribute selector [attr=value]", () => {
-            const result = cssTokenizer.tokenizeLine("input[type=\"text\"] {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('input[type="text"] {', INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
 
         it("should tokenize attribute selector [attr~=value]", () => {
-            const result = cssTokenizer.tokenizeLine("div[class~=\"active\"] {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('div[class~="active"] {', INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
 
         it("should tokenize attribute selector [attr^=value]", () => {
-            const result = cssTokenizer.tokenizeLine("a[href^=\"https\"] {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('a[href^="https"] {', INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
 
         it("should tokenize attribute selector [attr$=value]", () => {
-            const result = cssTokenizer.tokenizeLine("img[src$=\".png\"] {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('img[src$=".png"] {', INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
 
         it("should tokenize attribute selector [attr*=value]", () => {
-            const result = cssTokenizer.tokenizeLine("a[href*=\"example\"] {", INITIAL_STATE);
+            const result = cssTokenizer.tokenizeLine('a[href*="example"] {', INITIAL_STATE);
             const attrToken = result.tokens.find((t) => t.type === "attribute");
             expect(attrToken).toBeDefined();
         });
@@ -348,14 +363,20 @@ describe("CSS Tokenizer", () => {
         });
 
         it("should continue multi-line comment", () => {
-            const result = cssTokenizer.tokenizeLine("middle of comment", { kind: "block-comment", templateExpressionDepth: 0 });
+            const result = cssTokenizer.tokenizeLine("middle of comment", {
+                kind: "block-comment",
+                templateExpressionDepth: 0,
+            });
             const commentToken = result.tokens.find((t) => t.type === "comment");
             expect(commentToken).toBeDefined();
             expect(result.endState.kind).toBe("block-comment");
         });
 
         it("should close multi-line comment", () => {
-            const result = cssTokenizer.tokenizeLine("end of comment */", { kind: "block-comment", templateExpressionDepth: 0 });
+            const result = cssTokenizer.tokenizeLine("end of comment */", {
+                kind: "block-comment",
+                templateExpressionDepth: 0,
+            });
             const commentToken = result.tokens.find((t) => t.type === "comment");
             expect(commentToken).toBeDefined();
             expect(result.endState.kind).toBe("normal");

@@ -257,12 +257,7 @@ describe("documentState", () => {
 
     describe("Integration", () => {
         it("should handle complex editing scenario", () => {
-            const lines = [
-                "function test() {",
-                "    const x = 1;",
-                "    return x;",
-                "}",
-            ];
+            const lines = ["function test() {", "    const x = 1;", "    return x;", "}"];
             let getLine = (lineNumber: number) => lines[lineNumber - 1];
 
             let state = createDocumentHighlightState("javascript", getLine, lines.length, 1);
@@ -282,13 +277,7 @@ describe("documentState", () => {
         });
 
         it("should handle multiline state transitions correctly", () => {
-            const lines = [
-                "const str = `",
-                "  multiline",
-                "  template",
-                "`;",
-                "const x = 1;",
-            ];
+            const lines = ["const str = `", "  multiline", "  template", "`;", "const x = 1;"];
             const getLine = (lineNumber: number) => lines[lineNumber - 1];
 
             const state = createDocumentHighlightState("javascript", getLine, lines.length, 1);

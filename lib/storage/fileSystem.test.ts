@@ -91,9 +91,7 @@ describe("FileSystem", () => {
 
         it("should prevent duplicate file names in same directory", async () => {
             await fs.createFile("root", "duplicate.ts");
-            await expect(fs.createFile("root", "duplicate.ts")).rejects.toThrow(
-                "already exists",
-            );
+            await expect(fs.createFile("root", "duplicate.ts")).rejects.toThrow("already exists");
         });
     });
 
@@ -136,9 +134,7 @@ describe("FileSystem", () => {
 
         it("should prevent duplicate directory names", async () => {
             await fs.createDirectory("root", "duplicate");
-            await expect(fs.createDirectory("root", "duplicate")).rejects.toThrow(
-                "already exists",
-            );
+            await expect(fs.createDirectory("root", "duplicate")).rejects.toThrow("already exists");
         });
     });
 

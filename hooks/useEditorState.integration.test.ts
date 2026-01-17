@@ -35,10 +35,9 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle create file -> edit -> close -> reopen workflow", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "" },
+            });
 
             // Create and edit
             act(() => {
@@ -59,9 +58,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle complete edit-select-delete-type workflow", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             // Select "World"
             act(() => {
@@ -87,9 +84,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle navigate-select-cut-navigate-paste workflow", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "First Second Third" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "First Second Third" }));
 
             // Navigate to "Second"
             act(() => {
@@ -156,9 +151,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Multi-line Editing with State Synchronization", () => {
         it("should handle multi-line paste operations", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1" }));
 
             const multilineText = "Line A\nLine B\nLine C";
 
@@ -178,9 +171,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should maintain cursor position during multi-line edits", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             // Position cursor at middle line
             act(() => {
@@ -199,9 +190,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should delete across line boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "First\nSecond\nThird" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "First\nSecond\nThird" }));
 
             // Select from middle of line 1 to middle of line 3
             act(() => {
@@ -218,9 +207,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle inserting newlines in middle of existing lines", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 6));
@@ -287,9 +274,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should undo after selection delete", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             // Select and delete
             act(() => {
@@ -426,9 +411,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Find and Replace Workflow (Selection-based)", () => {
         it("should find all matches by selecting each occurrence", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "foo bar foo baz foo" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "foo bar foo baz foo" }));
 
             // Select first "foo"
             act(() => {
@@ -453,9 +436,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should replace single match and continue", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "foo bar foo" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "foo bar foo" }));
 
             // Select first "foo"
             act(() => {
@@ -478,9 +459,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should replace all matches in sequence", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "foo bar foo baz foo" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "foo bar foo baz foo" }));
 
             // Replace first
             act(() => {
@@ -508,9 +487,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle case-sensitive find and replace", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Foo foo FOO" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Foo foo FOO" }));
 
             // Select lowercase "foo"
             act(() => {
@@ -530,9 +507,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Selection Operations + Delete", () => {
         it("should select word and delete", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World Test" }));
 
             // Position at start of "World"
             act(() => {
@@ -561,9 +536,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should select line and delete", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             // Select entire line 2
             act(() => {
@@ -583,9 +556,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should select all and replace", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Old content here" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Old content here" }));
 
             act(() => {
                 result.current.executeCommand({ type: "selectAll" });
@@ -601,9 +572,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle backwards selection and delete", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             // Create backwards selection (active before anchor)
             act(() => {
@@ -620,9 +589,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle multi-line selection delete", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3\nLine 4" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3\nLine 4" }));
 
             // Select from middle of line 2 to middle of line 3
             act(() => {
@@ -640,9 +607,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle delete with empty selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 3));
@@ -657,9 +622,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle multiple consecutive selection deletes", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "One Two Three Four" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "One Two Three Four" }));
 
             // Delete "Two "
             act(() => {
@@ -681,9 +644,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Word-by-Word Navigation", () => {
         it("should navigate words in single line", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "The quick brown fox" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "The quick brown fox" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 1));
@@ -711,9 +672,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should navigate words across lines", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "First line\nSecond line" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "First line\nSecond line" }));
 
             // Start at end of first line
             act(() => {
@@ -742,9 +701,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle punctuation during word navigation", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "hello,world;test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "hello,world;test" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 1));
@@ -771,9 +728,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should select words with shift+ctrl+arrow equivalent", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World Test" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 1));
@@ -794,9 +749,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle word navigation at document boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Only word" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Only word" }));
 
             // At start, word left should not move
             act(() => {
@@ -833,9 +786,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle word navigation with spaces", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "word   spaces   here" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "word   spaces   here" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 5));
@@ -855,10 +806,9 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Tab Switching Preserves State", () => {
         it("should preserve cursor position when switching tabs", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "File A content" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "File A content" },
+            });
 
             // Edit and position cursor
             act(() => {
@@ -877,10 +827,9 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should preserve selection when switching tabs", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "Test content" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "Test content" },
+            });
 
             act(() => {
                 result.current.setSelection(createSelection(1, 1, 1, 5));
@@ -895,10 +844,9 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should preserve undo history within a tab session", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "" },
+            });
 
             act(() => {
                 result.current.executeCommand({ type: "insert", text: "Edit 1" });
@@ -924,10 +872,9 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle rapid tab switching", () => {
-            const { result, rerender } = renderHook(
-                ({ content }) => useEditorState({ initialContent: content }),
-                { initialProps: { content: "A" } },
-            );
+            const { result, rerender } = renderHook(({ content }) => useEditorState({ initialContent: content }), {
+                initialProps: { content: "A" },
+            });
 
             // Rapid switches
             rerender({ content: "B" });
@@ -943,9 +890,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Large Document Operations (>1000 lines)", () => {
         it("should edit at end of large document", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }));
 
             expect(result.current.getLineCount()).toBe(1000);
 
@@ -967,9 +912,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle selection across large range", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }));
 
             // Select from line 1 to line 100
             act(() => {
@@ -981,9 +924,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle rapid edits in large document", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: LARGE_FILE_SAMPLES.medium }));
 
             // Position at middle
             act(() => {
@@ -1004,9 +945,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle undo in large document", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: LARGE_FILE_SAMPLES.small }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: LARGE_FILE_SAMPLES.small }));
 
             const initialLineCount = result.current.getLineCount();
 
@@ -1157,9 +1096,7 @@ describe("useEditorState - Integration Tests", () => {
 
     describe("Cut/Copy/Paste with Clipboard", () => {
         it("should cut selected text", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection(createSelection(1, 7, 1, 12));
@@ -1177,9 +1114,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should paste at cursor position", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 6));
@@ -1193,9 +1128,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should paste replacing selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection(createSelection(1, 7, 1, 12));
@@ -1209,9 +1142,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should paste multi-line content", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Start" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Start" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 6));
@@ -1230,9 +1161,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle cut with no selection", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello" }));
 
             act(() => {
                 result.current.executeCommand({ type: "cut" });
@@ -1242,9 +1171,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle consecutive cut and paste operations", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "One Two Three" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "One Two Three" }));
 
             // Cut "Two "
             act(() => {
@@ -1275,9 +1202,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should maintain cursor position after paste", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Test" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 3));
@@ -1332,9 +1257,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle multi-step refactoring workflow", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "var x = 1;\nvar y = 2;" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "var x = 1;\nvar y = 2;" }));
 
             // Replace "var" with "const" on first line
             act(() => {
@@ -1368,9 +1291,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle navigation with selection and editing", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "foo bar baz qux" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "foo bar baz qux" }));
 
             // Navigate to second word
             act(() => {
@@ -1456,9 +1377,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle selection extension across multiple operations", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "The quick brown fox" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "The quick brown fox" }));
 
             act(() => {
                 result.current.setCursor(createCursor(1, 1));
@@ -1487,9 +1406,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle document start/end navigation with editing", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Start\nMiddle\nEnd" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Start\nMiddle\nEnd" }));
 
             // Go to end
             act(() => {
@@ -1521,9 +1438,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle complex selection manipulation", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Alpha Beta Gamma Delta" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Alpha Beta Gamma Delta" }));
 
             // Select "Beta Gamma"
             act(() => {
@@ -1564,9 +1479,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle single character document", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "x" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "x" }));
 
             act(() => {
                 result.current.executeCommand({ type: "selectAll" });
@@ -1582,9 +1495,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle unicode and emoji content", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: CODE_SAMPLES.edgeCases.unicode }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: CODE_SAMPLES.edgeCases.unicode }));
 
             expect(result.current.getContent()).toBe("Hello 世界 🌍");
 
@@ -1603,9 +1514,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle very long single line", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: CODE_SAMPLES.edgeCases.longLine }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: CODE_SAMPLES.edgeCases.longLine }));
 
             expect(result.current.getLineLength(1)).toBe(10000);
 
@@ -1621,9 +1530,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle tab characters", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: CODE_SAMPLES.edgeCases.tabs }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: CODE_SAMPLES.edgeCases.tabs }));
 
             expect(result.current.getContent()).toBe("a\tb\tc");
 
@@ -1639,9 +1546,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle selections at document boundaries", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             // Select from start
             act(() => {
@@ -1659,9 +1564,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle rapid cursor movements", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Line 1\nLine 2\nLine 3" }));
 
             // Rapid movements
             for (let i = 0; i < 10; i++) {
@@ -1679,9 +1582,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle zero-length selections", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Test" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Test" }));
 
             // Create zero-length selection (cursor only)
             act(() => {
@@ -1698,9 +1599,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle line boundary edge cases", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "First\n\nThird" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "First\n\nThird" }));
 
             // Select empty line
             act(() => {
@@ -1712,9 +1611,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle cursor at line end edge cases", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Short\nLonger line" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Short\nLonger line" }));
 
             // Move to end of first line
             act(() => {
@@ -1730,9 +1627,7 @@ describe("useEditorState - Integration Tests", () => {
             });
 
             expect(result.current.cursor.line).toBe(2);
-            expect(result.current.cursor.column).toBeLessThanOrEqual(
-                result.current.getLineLength(2) + 1,
-            );
+            expect(result.current.cursor.column).toBeLessThanOrEqual(result.current.getLineLength(2) + 1);
         });
 
         it("should handle multiple consecutive undos and redos", () => {
@@ -1788,9 +1683,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should handle multiple selections in sequence", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "One Two Three Four Five" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "One Two Three Four Five" }));
 
             // Rapidly change selections
             for (let i = 1; i < 20; i += 5) {
@@ -1901,9 +1794,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should maintain isDirty flag correctly", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Initial" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Initial" }));
 
             expect(result.current.isDirty).toBe(false);
 
@@ -1915,9 +1806,7 @@ describe("useEditorState - Integration Tests", () => {
         });
 
         it("should clear selection after insert", () => {
-            const { result } = renderHook(() =>
-                useEditorState({ initialContent: "Hello World" }),
-            );
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
 
             act(() => {
                 result.current.setSelection(createSelection(1, 1, 1, 6));

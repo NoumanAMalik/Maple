@@ -189,15 +189,7 @@ describe("Coordinates", () => {
             const position = { line: 5, column: 10 };
 
             const pixel = positionToPixel(converter, position, 0, 0);
-            const backToPosition = pixelToPosition(
-                converter,
-                pixel.x,
-                pixel.y,
-                0,
-                0,
-                10,
-                getLineLength,
-            );
+            const backToPosition = pixelToPosition(converter, pixel.x, pixel.y, 0, 0, 10, getLineLength);
 
             expect(backToPosition.line).toBe(position.line);
             expect(backToPosition.column).toBeCloseTo(position.column, 0);
@@ -418,8 +410,8 @@ describe("Coordinates", () => {
 
             // Should be close to original (allowing for character width/line height rounding)
             // Using larger tolerance due to discretization
-            const xTolerance = converter.charWidth;  // Allow up to 1 char width difference
-            const yTolerance = converter.config.lineHeight;  // Allow up to 1 line height difference
+            const xTolerance = converter.charWidth; // Allow up to 1 char width difference
+            const yTolerance = converter.config.lineHeight; // Allow up to 1 line height difference
             expect(Math.abs(pixel.x - originalX)).toBeLessThan(xTolerance);
             expect(Math.abs(pixel.y - originalY)).toBeLessThan(yTolerance);
         });

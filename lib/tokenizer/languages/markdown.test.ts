@@ -132,7 +132,10 @@ describe("Markdown Tokenizer", () => {
         });
 
         it("should handle code block content", () => {
-            const result = markdownTokenizer.tokenizeLine("const x = 5;", { kind: "block-comment", templateExpressionDepth: 0 });
+            const result = markdownTokenizer.tokenizeLine("const x = 5;", {
+                kind: "block-comment",
+                templateExpressionDepth: 0,
+            });
             const stringToken = result.tokens.find((t) => t.type === "string");
             expect(stringToken).toBeDefined();
             expect(result.endState.kind).toBe("block-comment");
@@ -484,7 +487,10 @@ describe("Markdown Tokenizer", () => {
 
     describe("Complex Examples", () => {
         it("should handle complex line with multiple elements", () => {
-            const result = markdownTokenizer.tokenizeLine("# Title with **bold** and *italic* and `code`", INITIAL_STATE);
+            const result = markdownTokenizer.tokenizeLine(
+                "# Title with **bold** and *italic* and `code`",
+                INITIAL_STATE,
+            );
             expect(result.tokens.length).toBeGreaterThan(0);
         });
 

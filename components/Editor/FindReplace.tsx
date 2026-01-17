@@ -150,7 +150,9 @@ export function FindReplace({
     if (!isVisible) return null;
 
     return (
-        <div className={`absolute top-2 right-6 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl ${isClosing ? "animate-slideOutToTopRight" : "animate-slideInFromTopRight"}`}>
+        <div
+            className={`absolute top-2 right-6 z-50 w-80 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] p-3 shadow-xl ${isClosing ? "animate-slideOutToTopRight" : "animate-slideInFromTopRight"}`}
+        >
             {/* Find input row */}
             <div className="flex items-center gap-2">
                 <div className="relative flex-1">
