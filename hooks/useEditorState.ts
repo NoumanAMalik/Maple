@@ -26,6 +26,11 @@ interface HistoryEntry {
     timestamp: number;
 }
 
+interface EditMetadata {
+    changedFromLine: number;
+    version: number;
+}
+
 export interface EditorStateAPI {
     // State
     cursor: CursorPosition;
@@ -47,6 +52,10 @@ export interface EditorStateAPI {
     // Direct setters (for mouse handling)
     setCursor: (position: CursorPosition) => void;
     setSelection: (selection: Selection | null) => void;
+
+    // Edit metadata for incremental tokenization
+    getEditMetadata: () => EditMetadata | null;
+    clearEditMetadata: () => void;
 }
 
 const HISTORY_BATCH_WINDOW = 300; // ms - batch edits within this window
@@ -76,6 +85,9 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     const undoStackRef = useRef<HistoryEntry[]>([]);
     const redoStackRef = useRef<HistoryEntry[]>([]);
     const lastEditTimeRef = useRef<number>(0);
+
+    // Edit metadata for incremental tokenization
+    const editMetadataRef = useRef<EditMetadata | null>(null);
 
     // Helper to trigger re-render
     const triggerUpdate = useCallback(() => {
@@ -153,6 +165,10 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         (text: string) => {
             const buffer = bufferRef.current;
 
+            // Determine changedFromLine before any edits
+            const changedFromLine =
+                selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
+
             // Delete selection first if present
             if (selection && !isSelectionEmpty(selection)) {
                 const normalized = normalizeSelection(selection);
@@ -173,15 +189,22 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             setCursorState(newCursor);
             setIsDirty(true);
 
+            // Store edit metadata for incremental tokenization
+            editMetadataRef.current = { changedFromLine, version: version + 1 };
+
             onChange?.(buffer.getText());
             triggerUpdate();
         },
-        [cursor, selection, onChange, triggerUpdate],
+        [cursor, selection, onChange, triggerUpdate, version],
     );
 
     // Delete backward (backspace)
     const deleteBackward = useCallback(() => {
         const buffer = bufferRef.current;
+
+        // Determine changedFromLine before any edits
+        const changedFromLine =
+            selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
 
         if (selection && !isSelectionEmpty(selection)) {
             // Delete selection
@@ -202,13 +225,21 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         }
 
         setIsDirty(true);
+
+        // Store edit metadata for incremental tokenization
+        editMetadataRef.current = { changedFromLine, version: version + 1 };
+
         onChange?.(buffer.getText());
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate]);
+    }, [cursor, selection, onChange, triggerUpdate, version]);
 
     // Delete forward (delete key)
     const deleteForward = useCallback(() => {
         const buffer = bufferRef.current;
+
+        // Determine changedFromLine before any edits
+        const changedFromLine =
+            selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
 
         if (selection && !isSelectionEmpty(selection)) {
             // Delete selection
@@ -227,9 +258,13 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         }
 
         setIsDirty(true);
+
+        // Store edit metadata for incremental tokenization
+        editMetadataRef.current = { changedFromLine, version: version + 1 };
+
         onChange?.(buffer.getText());
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate]);
+    }, [cursor, selection, onChange, triggerUpdate, version]);
 
     // Move cursor in a direction
     const moveCursor = useCallback(
@@ -422,9 +457,12 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         setSelectionState(entry.selection);
         setIsDirty(true);
 
+        // Full re-tokenization needed after undo
+        editMetadataRef.current = { changedFromLine: 1, version: version + 1 };
+
         onChange?.(bufferRef.current.getText());
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate]);
+    }, [cursor, selection, onChange, triggerUpdate, version]);
 
     // Redo
     const redo = useCallback(() => {
@@ -445,9 +483,12 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         setSelectionState(entry.selection);
         setIsDirty(true);
 
+        // Full re-tokenization needed after redo
+        editMetadataRef.current = { changedFromLine: 1, version: version + 1 };
+
         onChange?.(bufferRef.current.getText());
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate]);
+    }, [cursor, selection, onChange, triggerUpdate, version]);
 
     // Execute a command
     const executeCommand = useCallback(
@@ -571,6 +612,10 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             executeCommand,
             setCursor,
             setSelection,
+            getEditMetadata: () => editMetadataRef.current,
+            clearEditMetadata: () => {
+                editMetadataRef.current = null;
+            },
         }),
         [cursor, selection, isDirty, version, config, getSelectedText, executeCommand, setCursor, setSelection],
     );
