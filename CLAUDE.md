@@ -222,6 +222,70 @@ Before implementing a feature:
 
 ---
 
+## Design Context
+
+### Users
+
+Maple serves developers who need a quick, convenient online editor for code-related tasks—not as a daily driver IDE, but as a fast tool to open when you need to make quick changes without launching a heavy editor. Think: editing a config file, reviewing a snippet, making a quick fix. Users value speed and simplicity over feature depth.
+
+### Brand Personality
+
+**Refined, Swift, Essential**
+
+Maple is elegant simplicity that gets out of your way. It's the well-crafted tool that does one thing beautifully. The brand voice is confident but quiet—it doesn't shout, it just works.
+
+**Emotional Goals**: Calm & focused, Professional & confident. Users should feel like they've stepped into a peaceful, distraction-free space where they can think clearly and work efficiently.
+
+### Aesthetic Direction
+
+**Visual Tone**: Sophisticated yet approachable. Hand-crafted quality meets modern efficiency.
+
+**Two Distinct Modes**:
+1. **Landing Page** (Light): Warm cream palette (`maple-cream: #fbf7f4`), terracotta accent (`#c17f59`), elegant Instrument Serif typography. Subtle grain texture adds tactile warmth. Feels like a well-designed print piece.
+2. **Editor** (Dark): "Bearded Theme Black & Gold" - deep dark (`#111418`) with gold accent (`#c7910c`). JetBrains Mono for code. Feels premium and focused.
+
+**References**:
+- **Linear**: Clean, fast, keyboard-first, dark mode excellence
+- **Notion**: Warm, inviting, makes productivity feel approachable
+
+**Anti-References** (what to avoid):
+- Generic Bootstrap/template sites—no bland corporate aesthetic
+- Overly playful/gamified interfaces—maintain professionalism
+- VS Code-level complexity—stay focused and lightweight
+
+### Design Principles
+
+1. **Essentialism**: Every element earns its place. Remove before you add. If it doesn't serve the task of writing code quickly, question whether it belongs.
+
+2. **Quiet Confidence**: The interface should feel assured without being loud. Gold accents used sparingly. Typography does the heavy lifting. Whitespace is generous.
+
+3. **Instant Utility**: Zero friction to productivity. Fast load times, keyboard-first interactions, immediate responsiveness. The editor should feel faster than opening a desktop app.
+
+4. **Crafted Details**: Small touches that signal care—the grain texture, the serif italic headlines, the considered color palette. Quality over quantity.
+
+5. **Contextual Contrast**: The warm landing page and dark editor are intentional opposites. Landing = inviting welcome. Editor = focused workspace. The transition signals "time to work."
+
+### Typography
+
+- **Display/Headlines**: Instrument Serif (italic for emphasis)
+- **UI/Body**: Geist Sans
+- **Code**: JetBrains Mono
+
+### Color System
+
+**Landing (Light Mode)**:
+- Background: `#fbf7f4` (maple-cream)
+- Text: `#1a1612` (maple-text)
+- Accent: `#c17f59` (maple-accent / terracotta)
+
+**Editor (Dark Mode)**:
+- Background: `#111418` (editor-bg)
+- Text: `#e3e3e3` (editor-fg)
+- Accent: `#c7910c` (ui-accent / gold)
+- Syntax colors follow "Bearded Theme Black & Gold"
+
+---
+
 **Last Updated**: 2025-12-25
 **Status**: Initial Setup Complete
 **Next Phase**: Implement State Machine Tokenizer
