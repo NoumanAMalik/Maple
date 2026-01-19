@@ -43,3 +43,9 @@ next-env.d.ts
 # bun
 bun.lockb
 .bun/
+
+# turbo
+.turbo
+
+# go
+apps/collab/bin/

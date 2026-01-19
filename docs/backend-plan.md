@@ -892,6 +892,14 @@ interface OutboxOp {
 
 ## 8. Implementation Phases
 
+> **Strategy: Anonymous-First**
+> 
+> We validate the core real-time collaboration (WebSocket + OT) with anonymous in-memory
+> sharing before adding authentication, database persistence, or user accounts. This lets
+> us prove Railway deployment works and OT is correct with minimal complexity.
+
+---
+
 ### Phase 0: Monorepo Setup (1-3 hours)
 
 **Tasks:**
@@ -905,88 +913,119 @@ interface OutboxOp {
 
 ---
 
-### Phase 1: Go Server Skeleton + DB (3-6 hours)
+### Phase 1: Go Server Skeleton (2-4 hours)
 
 **Tasks:**
-- [ ] Set up Chi router with middleware
-- [ ] Configure pgxpool connection
+- [ ] Set up Chi router with basic middleware (CORS, logging, recovery)
 - [ ] Add slog structured logging
-- [ ] Create initial migrations
-- [ ] Add migrate CLI integration
-- [ ] Create base tables: users, sessions
+- [ ] Health check endpoint (`GET /health`)
+- [ ] Basic Dockerfile for Railway deployment
+- [ ] **No database yet** — server is stateless
 
-**Milestone:** Health endpoint returns OK, DB connected
-
----
-
-### Phase 2: Authentication (4-8 hours)
-
-**Tasks:**
-- [ ] Implement password hashing (Argon2id)
-- [ ] Create register endpoint
-- [ ] Create login endpoint with JWT generation
-- [ ] Implement refresh token flow
-- [ ] Add logout (revoke session)
-- [ ] Configure CORS for web domain
-- [ ] Add auth middleware
-
-**Milestone:** Web can register, login, call `/me`
+**Milestone:** Go server deploys to Railway, health endpoint returns OK
 
 ---
 
-### Phase 3: Document CRUD (4-8 hours)
+### Phase 2: Anonymous WebSocket Rooms + Presence (1-2 days)
 
-**Tasks:**
-- [ ] Create documents table migration
-- [ ] Implement create document endpoint
-- [ ] Implement list documents endpoint
-- [ ] Implement get document with content
-- [ ] Add authorization checks (owner/collaborator)
-- [ ] Create initial snapshot on document create
+**Goal:** User clicks "Share" on a local file → creates a shareable link → others join and see cursors
 
-**Milestone:** Cloud documents exist, can be opened by ID
+**Backend Tasks:**
+- [ ] `POST /v1/share` — creates room, returns `{ roomId: "abc123" }`
+- [ ] `DELETE /v1/share/:roomId` — owner closes room (or auto-close on disconnect)
+- [ ] WebSocket upgrade at `/v1/share/:roomId/ws`
+- [ ] Hub manages `roomId → *Room` map (in-memory only)
+- [ ] Room stores document content in memory
+- [ ] First client sends initial content; subsequent clients receive it
+- [ ] Presence broadcasting (cursors, selections)
+- [ ] Heartbeat/ping-pong for connection health
+- [ ] Room auto-destructs when owner disconnects (or after timeout)
 
----
+**Frontend Tasks:**
+- [ ] "Share" button in editor toolbar
+- [ ] Generate share link (e.g., `maple.dev/share/abc123`)
+- [ ] CollabClient connects to room WebSocket
+- [ ] Display collaborator cursors
+- [ ] "Stop Sharing" button clears room
 
-### Phase 4: WebSocket Rooms + Presence (1-2 days)
-
-**Tasks:**
-- [ ] Implement WebSocket upgrade handler
-- [ ] Create Hub with room lifecycle
-- [ ] Implement Room goroutine loop
-- [ ] Add Conn wrapper with read/write goroutines
-- [ ] Implement hello/welcome handshake
-- [ ] Add presence broadcasting
-- [ ] Implement heartbeat/ping-pong
-- [ ] Add reconnect handling
-
-**Milestone:** Multiple clients see each other's cursors
+**Milestone:** Two browsers can open same link, see each other's cursors in real-time
 
 ---
 
-### Phase 5: OT Implementation (1-2 days)
+### Phase 3: OT Implementation — In-Memory (1-2 days)
+
+**Goal:** Multiple users can type concurrently without document corruption
 
 **Tasks:**
-- [ ] Define Operation types in Go
-- [ ] Implement transform functions
-- [ ] Implement apply functions
-- [ ] Add ops table + persistence
-- [ ] Implement server OT loop (receive, transform, apply, broadcast)
-- [ ] Add ack messages
+- [ ] Define Operation types in Go (`Insert{Pos, Text}`, `Delete{Pos, Len}`)
+- [ ] Implement transform functions (Insert×Insert, Insert×Delete, Delete×Delete)
+- [ ] Implement apply functions (apply op to string)
+- [ ] Server OT loop: receive op → transform against concurrent ops → apply → broadcast
+- [ ] Client OT: pending ops queue, transform remote ops against pending
+- [ ] Ack messages so client knows op was accepted
+- [ ] **All state in memory** — no database persistence yet
 - [ ] Write extensive OT unit tests
 - [ ] Add convergence tests (random ops → same final state)
 
-**Milestone:** Two clients can type concurrently without corruption
+**Milestone:** Two clients can type concurrently, document stays consistent, no corruption
 
 ---
 
-### Phase 6: Offline Sync (1-2 days)
+### Phase 4: Railway Deployment Validation (2-4 hours)
+
+**Goal:** Prove the anonymous sharing works in production on Railway
+
+**Tasks:**
+- [ ] Deploy Go server to Railway
+- [ ] Deploy Next.js to Railway (or Vercel)
+- [ ] Configure CORS for production domains
+- [ ] Test WebSocket connections work through Railway's proxy
+- [ ] Test room creation, joining, real-time sync
+- [ ] Test room cleanup on disconnect
+- [ ] Basic load test (5-10 concurrent rooms)
+
+**Milestone:** Anonymous real-time collaboration works in production
+
+---
+
+### Phase 5: Database + Authentication (4-8 hours)
+
+**Now that core collab works, add persistence and accounts**
+
+**Tasks:**
+- [ ] Add PostgreSQL service on Railway
+- [ ] Configure pgxpool connection
+- [ ] Create migrations infrastructure
+- [ ] Create base tables: `users`, `sessions`
+- [ ] Implement password hashing (Argon2id)
+- [ ] Create register/login/refresh/logout endpoints
+- [ ] Add auth middleware
+- [ ] JWT + refresh token flow
+
+**Milestone:** Users can register, login, call `/me`
+
+---
+
+### Phase 6: Persistent Documents (4-8 hours)
+
+**Tasks:**
+- [ ] Create `documents`, `document_ops`, `document_snapshots` tables
+- [ ] Implement document CRUD endpoints
+- [ ] Persist OT ops to database (ops log)
+- [ ] Create snapshots every 100 ops
+- [ ] Load document from snapshot + replay ops on room creation
+- [ ] Authorization checks (owner/collaborator)
+
+**Milestone:** Documents persist to database, survive server restarts
+
+---
+
+### Phase 7: Offline Sync (1-2 days)
 
 **Tasks:**
 - [ ] Extend IndexedDB schema with sync fields
 - [ ] Create outbox for offline ops
-- [ ] Implement `CollabClient` in frontend
-- [ ] Add reconnect + rebase logic
+- [ ] Reconnect + rebase logic
 - [ ] Handle `resync_required` message
 - [ ] Test offline → online scenarios
 
@@ -994,34 +1033,32 @@ interface OutboxOp {
 
 ---
 
-### Phase 7: Sharing + History UI (1-2 days)
+### Phase 8: Sharing + Collaboration UI (1-2 days)
 
 **Tasks:**
-- [ ] Add collaborators endpoints
-- [ ] Add share links endpoints
-- [ ] Implement version list endpoint
-- [ ] Create UI for managing collaborators
-- [ ] Create UI for share links
-- [ ] Create version history panel
+- [ ] Add collaborators by email
+- [ ] Share links with expiry and permissions
+- [ ] Version history endpoint
+- [ ] UI for managing collaborators
+- [ ] UI for share links
+- [ ] Version history panel
 
 **Milestone:** Invite collaborators, edit together, browse history
 
 ---
 
-### Phase 8: Production Hardening (1-2 days)
+### Phase 9: Production Hardening (1-2 days)
 
 **Tasks:**
 - [ ] Add rate limiting
 - [ ] Add message size limits
-- [ ] Implement request ID tracing
-- [ ] Add structured error responses
-- [ ] Set up Railway deployment
-- [ ] Configure domains + SSL
-- [ ] Add automated migrations in deploy
+- [ ] Request ID tracing
+- [ ] Structured error responses
+- [ ] Automated migrations in deploy
 - [ ] Load test WebSocket rooms
 - [ ] OT fuzz testing
 
-**Milestone:** Stable production deployment
+**Milestone:** Stable, production-ready deployment
 
 ---
 
