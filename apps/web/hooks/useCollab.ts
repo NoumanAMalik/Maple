@@ -31,11 +31,13 @@ export interface UseCollabResult {
     connectionStatus: ConnectionStatus;
     roomId: string | null;
     isJoiner: boolean;
+    displayName: string;
     startSharing: (content: string, language?: string) => Promise<void>;
     stopSharing: () => void;
     joinRoom: (roomId: string) => Promise<{ snapshot: string; version: number }>;
     leaveRoom: () => void;
     updatePresence: (cursor: Position, selection?: Selection) => void;
+    setDisplayName: (name: string) => void;
 }
 
 export function useCollab(): UseCollabResult {
@@ -45,6 +47,7 @@ export function useCollab(): UseCollabResult {
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
     const [roomId, setRoomId] = useState<string | null>(null);
     const [isJoiner, setIsJoiner] = useState(false);
+    const [displayName, setDisplayNameState] = useState("You");
 
     const clientRef = useRef<CollabClient | null>(null);
     const colorIndexRef = useRef(0);
@@ -180,6 +183,8 @@ export function useCollab(): UseCollabResult {
             setRoomId(targetRoomId);
             setIsJoiner(true);
             setIsSharing(true);
+            const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+            setShareUrl(`${baseUrl}/editor?room=${targetRoomId}`);
 
             pendingJoinRef.current = { resolve, reject };
 
@@ -241,6 +246,11 @@ export function useCollab(): UseCollabResult {
         clientRef.current?.sendPresence(cursor, selection);
     }, []);
 
+    const setDisplayName = useCallback((name: string) => {
+        setDisplayNameState(name);
+        clientRef.current?.setDisplayName(name);
+    }, []);
+
     return {
         isSharing,
         shareUrl,
@@ -248,10 +258,12 @@ export function useCollab(): UseCollabResult {
         connectionStatus,
         roomId,
         isJoiner,
+        displayName,
         startSharing,
         stopSharing,
         joinRoom,
         leaveRoom,
         updatePresence,
+        setDisplayName,
     };
 }

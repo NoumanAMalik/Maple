@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, memo } from "react";
-import { Copy, Check, Square } from "lucide-react";
+import { Copy, Check, Square, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Collaborator, ConnectionStatus } from "@/hooks/useCollab";
 
@@ -9,11 +9,15 @@ interface SharePopoverProps {
     isOpen: boolean;
     onClose: () => void;
     isSharing: boolean;
+    isJoiner: boolean;
     shareUrl: string | null;
     collaborators: Collaborator[];
     connectionStatus: ConnectionStatus;
+    displayName: string;
     onStartSharing: () => void;
     onStopSharing: () => void;
+    onLeaveRoom: () => void;
+    onDisplayNameChange: (name: string) => void;
     anchorRef: React.RefObject<HTMLElement | null>;
 }
 
@@ -21,16 +25,43 @@ export const SharePopover = memo(function SharePopover({
     isOpen,
     onClose,
     isSharing,
+    isJoiner,
     shareUrl,
     collaborators,
     connectionStatus,
+    displayName,
     onStartSharing,
     onStopSharing,
+    onLeaveRoom,
+    onDisplayNameChange,
     anchorRef,
 }: SharePopoverProps) {
     const [copied, setCopied] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
+    const [localDisplayName, setLocalDisplayName] = useState(displayName);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const nameUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        setLocalDisplayName(displayName);
+    }, [displayName]);
+
+    const handleDisplayNameChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const newName = e.target.value;
+            setLocalDisplayName(newName);
+
+            if (nameUpdateTimeoutRef.current) {
+                clearTimeout(nameUpdateTimeoutRef.current);
+            }
+            nameUpdateTimeoutRef.current = setTimeout(() => {
+                if (newName.trim()) {
+                    onDisplayNameChange(newName.trim());
+                }
+            }, 300);
+        },
+        [onDisplayNameChange],
+    );
 
     const handleCopy = useCallback(async () => {
         if (!shareUrl) return;
@@ -121,41 +152,60 @@ export const SharePopover = memo(function SharePopover({
 
             {/* Content */}
             <div className="p-4">
-                {isSharing && shareUrl ? (
+                {isSharing ? (
                     <div className="space-y-4">
-                        {/* Share Link */}
-                        <div className="space-y-2">
-                            <label htmlFor="share-url" className="text-xs text-editor-line-number">
-                                Share link
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    id="share-url"
-                                    type="text"
-                                    readOnly
-                                    value={shareUrl}
-                                    className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--editor-fg)] outline-none focus:border-[var(--ui-accent)]"
-                                    onClick={(e) => e.currentTarget.select()}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleCopy}
-                                    className={cn(
-                                        "flex h-8 w-8 items-center justify-center rounded border border-[var(--ui-border)] transition-colors",
-                                        copied
-                                            ? "bg-[var(--level-success)]/10 border-[var(--level-success)]/40"
-                                            : "bg-[var(--ui-tab-bg)] hover:bg-[var(--ui-hover)]",
-                                    )}
-                                    aria-label={copied ? "Copied" : "Copy link"}
-                                >
-                                    {copied ? (
-                                        <Check className="h-4 w-4 text-[var(--level-success)]" />
-                                    ) : (
-                                        <Copy className="h-4 w-4 text-[var(--editor-fg)]" />
-                                    )}
-                                </button>
+                        {/* Share Link (for both host and joiner) */}
+                        {shareUrl && (
+                            <div className="space-y-2">
+                                <label htmlFor="share-url" className="text-xs text-[var(--editor-line-number)]">
+                                    Share link
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        id="share-url"
+                                        type="text"
+                                        readOnly
+                                        value={shareUrl}
+                                        className="flex-1 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2.5 py-1.5 font-mono text-xs text-[var(--editor-fg)] outline-none focus:border-[var(--ui-accent)]"
+                                        onClick={(e) => e.currentTarget.select()}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleCopy}
+                                        className={cn(
+                                            "flex h-8 w-8 items-center justify-center rounded border border-[var(--ui-border)] transition-colors",
+                                            copied
+                                                ? "bg-[var(--level-success)]/10 border-[var(--level-success)]/40"
+                                                : "bg-[var(--ui-tab-bg)] hover:bg-[var(--ui-hover)]",
+                                        )}
+                                        aria-label={copied ? "Copied" : "Copy link"}
+                                    >
+                                        {copied ? (
+                                            <Check className="h-4 w-4 text-[var(--level-success)]" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 text-[var(--editor-fg)]" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Display Name (for joiners) */}
+                        {isJoiner && (
+                            <div className="space-y-2">
+                                <label htmlFor="display-name" className="text-xs text-[var(--editor-line-number)]">
+                                    Your display name
+                                </label>
+                                <input
+                                    id="display-name"
+                                    type="text"
+                                    value={localDisplayName}
+                                    onChange={handleDisplayNameChange}
+                                    placeholder="Enter your name"
+                                    className="w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2.5 py-1.5 text-sm text-[var(--editor-fg)] outline-none focus:border-[var(--ui-accent)]"
+                                />
+                            </div>
+                        )}
 
                         {/* Collaborators */}
                         <div className="space-y-2">
@@ -175,7 +225,9 @@ export const SharePopover = memo(function SharePopover({
                                         className="h-2 w-2 rounded-full"
                                         style={{ backgroundColor: "var(--ui-accent)" }}
                                     />
-                                    <span className="text-xs text-[var(--editor-fg)]">You</span>
+                                    <span className="text-xs text-[var(--editor-fg)]">
+                                        {isJoiner ? localDisplayName || "You" : "You"}
+                                    </span>
                                 </div>
                                 {/* Other collaborators */}
                                 {collaborators.map((collab) => (
@@ -196,15 +248,26 @@ export const SharePopover = memo(function SharePopover({
                             </div>
                         </div>
 
-                        {/* Stop Sharing Button */}
-                        <button
-                            type="button"
-                            onClick={onStopSharing}
-                            className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--level-danger)]/60 bg-transparent px-4 py-2 text-sm text-[var(--level-danger)] transition-colors hover:bg-[var(--level-danger)]/10"
-                        >
-                            <Square className="h-3.5 w-3.5" />
-                            Stop Sharing
-                        </button>
+                        {/* Action Button */}
+                        {isJoiner ? (
+                            <button
+                                type="button"
+                                onClick={onLeaveRoom}
+                                className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--ui-border)] bg-transparent px-4 py-2 text-sm text-[var(--editor-fg)] transition-colors hover:bg-[var(--ui-hover)]"
+                            >
+                                <LogOut className="h-3.5 w-3.5" />
+                                Leave Room
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onStopSharing}
+                                className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--level-danger)]/60 bg-transparent px-4 py-2 text-sm text-[var(--level-danger)] transition-colors hover:bg-[var(--level-danger)]/10"
+                            >
+                                <Square className="h-3.5 w-3.5" />
+                                Stop Sharing
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">

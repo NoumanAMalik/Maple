@@ -341,11 +341,15 @@ function EditorContent() {
                         isOpen={showSharePopover}
                         onClose={closeSharePopover}
                         isSharing={collab.isSharing}
+                        isJoiner={collab.isJoiner}
                         shareUrl={collab.shareUrl}
                         collaborators={collab.collaborators}
                         connectionStatus={collab.connectionStatus}
+                        displayName={collab.displayName}
                         onStartSharing={handleStartSharing}
                         onStopSharing={handleStopSharing}
+                        onLeaveRoom={handleLeaveRoom}
+                        onDisplayNameChange={collab.setDisplayName}
                         anchorRef={shareButtonRef}
                     />
                 </div>
