@@ -125,7 +125,7 @@ export const SharePopover = memo(function SharePopover({
                     <div className="space-y-4">
                         {/* Share Link */}
                         <div className="space-y-2">
-                            <label htmlFor="share-url" className="text-xs text-[var(--editor-line-number)]">
+                            <label htmlFor="share-url" className="text-xs text-editor-line-number">
                                 Share link
                             </label>
                             <div className="flex gap-2">
