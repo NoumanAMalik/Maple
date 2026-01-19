@@ -356,6 +356,26 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
             };
         }
 
+        case "LOAD_COLLAB_SNAPSHOT": {
+            const { content, language, roomId } = action.payload;
+
+            const collabTab: EditorTab = {
+                id: `collab-${roomId}`,
+                fileId: `collab-${roomId}`,
+                fileName: "Shared Document",
+                filePath: "/shared",
+                isDirty: false,
+                language: language as EditorTab["language"],
+                unsavedContent: content,
+            };
+
+            return {
+                ...state,
+                tabs: [collabTab],
+                activeTabId: collabTab.id,
+            };
+        }
+
         default:
             return state;
     }

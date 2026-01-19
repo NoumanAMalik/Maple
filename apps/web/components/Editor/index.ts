@@ -9,6 +9,7 @@ export { FindReplace } from "./FindReplace";
 export { FindReplaceSidebar } from "./FindReplaceSidebar";
 export { Gutter } from "./Gutter";
 export { HiddenTextarea } from "./HiddenTextarea";
+export { JoiningOverlay } from "./JoiningOverlay";
 export { Line } from "./Line";
 export { LineRenderer } from "./LineRenderer";
 export { SelectionRenderer } from "./SelectionRenderer";

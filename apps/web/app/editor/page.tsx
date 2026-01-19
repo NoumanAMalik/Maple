@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
     ActivityBar,
     Explorer,
@@ -11,6 +12,7 @@ import {
     FindReplaceSidebar,
     ShareButton,
     SharePopover,
+    JoiningOverlay,
 } from "@/components/Editor";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { registerDefaultCommands } from "@/lib/commands/defaultCommands";
@@ -18,6 +20,8 @@ import { useFindReplace } from "@/hooks/useFindReplace";
 import { useCollab } from "@/hooks/useCollab";
 import { cn } from "@/lib/utils";
 import type { CursorPosition } from "@/types/editor";
+
+type JoinState = "idle" | "joining" | "joined" | "error";
 
 // Helper to get all file names at root level
 function getRootFileNames(fileTree: { name: string }[]): Set<string> {
@@ -40,6 +44,10 @@ function generateUniqueFileName(existingNames: Set<string>, baseName = "untitled
 
 function EditorContent() {
     const { state, createFile, closeTab, dispatch } = useWorkspace();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const roomParam = searchParams.get("room");
+
     const [isExplorerOpen, setIsExplorerOpen] = useState(true);
     const [isSearchSidebarOpen, setIsSearchSidebarOpen] = useState(false);
     const [cursorPosition, setCursorPosition] = useState<CursorPosition>({ line: 1, column: 1 });
@@ -47,6 +55,11 @@ function EditorContent() {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [showSharePopover, setShowSharePopover] = useState(false);
     const shareButtonRef = useRef<HTMLButtonElement>(null);
+
+    const [joinState, setJoinState] = useState<JoinState>(roomParam ? "joining" : "idle");
+    const [joinError, setJoinError] = useState<{ code?: string; message: string } | null>(null);
+    const [joinAttempt, setJoinAttempt] = useState(0);
+    const didAttemptJoinRef = useRef(false);
 
     const collab = useCollab();
 
@@ -169,9 +182,58 @@ function EditorContent() {
         setShowSharePopover(false);
     }, [collab]);
 
-    // Update presence when cursor changes
+    // Handle leaving room (for joiners)
+    const handleLeaveRoom = useCallback(() => {
+        collab.leaveRoom();
+        setJoinState("idle");
+        setJoinError(null);
+        router.replace("/editor");
+    }, [collab, router]);
+
+    // Join room effect - runs when ?room= param is present
     useEffect(() => {
-        if (collab.isSharing) {
+        if (!roomParam || didAttemptJoinRef.current) return;
+        didAttemptJoinRef.current = true;
+
+        const targetRoomId = roomParam;
+
+        async function joinRoomAsync() {
+            try {
+                setJoinState("joining");
+                const { snapshot } = await collab.joinRoom(targetRoomId);
+
+                dispatch({
+                    type: "LOAD_COLLAB_SNAPSHOT",
+                    payload: {
+                        content: snapshot,
+                        roomId: targetRoomId,
+                    },
+                });
+
+                setJoinState("joined");
+            } catch (error) {
+                console.error("[EditorPage] Failed to join room:", error);
+                setJoinState("error");
+                setJoinError({
+                    message: error instanceof Error ? error.message : "Failed to join room",
+                });
+            }
+        }
+
+        joinRoomAsync();
+    }, [roomParam, collab, dispatch, joinAttempt]);
+
+    // Retry join handler
+    const handleRetryJoin = useCallback(() => {
+        if (!roomParam) return;
+        didAttemptJoinRef.current = false;
+        setJoinError(null);
+        setJoinAttempt((prev) => prev + 1);
+    }, [roomParam]);
+
+    // Update presence when cursor changes (for both host and joiner)
+    useEffect(() => {
+        if (collab.connectionStatus === "connected" && collab.roomId) {
             collab.updatePresence(cursorPosition);
         }
     }, [collab, cursorPosition]);
@@ -355,6 +417,16 @@ function EditorContent() {
 
             {/* Command Palette */}
             <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
+
+            {/* Joining Overlay */}
+            {(joinState === "joining" || joinState === "error") && (
+                <JoiningOverlay
+                    state={joinState}
+                    error={joinError ?? undefined}
+                    onRetry={handleRetryJoin}
+                    onExit={handleLeaveRoom}
+                />
+            )}
         </div>
     );
 }

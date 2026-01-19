@@ -29,8 +29,12 @@ export interface UseCollabResult {
     shareUrl: string | null;
     collaborators: Collaborator[];
     connectionStatus: ConnectionStatus;
+    roomId: string | null;
+    isJoiner: boolean;
     startSharing: (content: string, language?: string) => Promise<void>;
     stopSharing: () => void;
+    joinRoom: (roomId: string) => Promise<{ snapshot: string; version: number }>;
+    leaveRoom: () => void;
     updatePresence: (cursor: Position, selection?: Selection) => void;
 }
 
@@ -40,9 +44,14 @@ export function useCollab(): UseCollabResult {
     const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
     const [roomId, setRoomId] = useState<string | null>(null);
+    const [isJoiner, setIsJoiner] = useState(false);
 
     const clientRef = useRef<CollabClient | null>(null);
     const colorIndexRef = useRef(0);
+    const pendingJoinRef = useRef<{
+        resolve: (value: { snapshot: string; version: number }) => void;
+        reject: (reason: Error) => void;
+    } | null>(null);
 
     const getNextColor = useCallback(() => {
         const color = COLLABORATOR_COLORS[colorIndexRef.current % COLLABORATOR_COLORS.length];
@@ -58,7 +67,7 @@ export function useCollab(): UseCollabResult {
             setConnectionStatus(status);
         };
 
-        client.onWelcome = (_snapshot, _version, presence) => {
+        client.onWelcome = (snapshot, version, presence) => {
             const existingCollaborators = presence
                 .filter((p) => p.actor.clientId !== client.getClientId())
                 .map((p) => ({
@@ -69,6 +78,13 @@ export function useCollab(): UseCollabResult {
                     selection: p.presence.selection,
                 }));
             setCollaborators(existingCollaborators);
+
+            client.sendPresence({ line: 1, column: 1 });
+
+            if (pendingJoinRef.current) {
+                pendingJoinRef.current.resolve({ snapshot, version });
+                pendingJoinRef.current = null;
+            }
         };
 
         client.onUserJoined = (actor: Actor) => {
@@ -121,6 +137,10 @@ export function useCollab(): UseCollabResult {
 
         client.onError = (error) => {
             console.error("[useCollab] Error:", error);
+            if (pendingJoinRef.current) {
+                pendingJoinRef.current.reject(new Error(error.message));
+                pendingJoinRef.current = null;
+            }
         };
 
         return () => {
@@ -147,11 +167,53 @@ export function useCollab(): UseCollabResult {
 
         const data: CreateRoomResponse = await response.json();
         setRoomId(data.roomId);
+        setIsJoiner(false);
         const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
         setShareUrl(`${baseUrl}/editor?room=${data.roomId}`);
         setIsSharing(true);
 
         clientRef.current?.connect(data.roomId);
+    }, []);
+
+    const joinRoom = useCallback((targetRoomId: string): Promise<{ snapshot: string; version: number }> => {
+        return new Promise((resolve, reject) => {
+            setRoomId(targetRoomId);
+            setIsJoiner(true);
+            setIsSharing(true);
+
+            pendingJoinRef.current = { resolve, reject };
+
+            const timeout = setTimeout(() => {
+                if (pendingJoinRef.current) {
+                    pendingJoinRef.current.reject(new Error("Join room timeout"));
+                    pendingJoinRef.current = null;
+                }
+            }, 10000);
+
+            const originalResolve = pendingJoinRef.current.resolve;
+            pendingJoinRef.current.resolve = (value) => {
+                clearTimeout(timeout);
+                originalResolve(value);
+            };
+
+            const originalReject = pendingJoinRef.current.reject;
+            pendingJoinRef.current.reject = (reason) => {
+                clearTimeout(timeout);
+                originalReject(reason);
+            };
+
+            clientRef.current?.connect(targetRoomId);
+        });
+    }, []);
+
+    const leaveRoom = useCallback(() => {
+        clientRef.current?.disconnect();
+        setIsSharing(false);
+        setShareUrl(null);
+        setRoomId(null);
+        setIsJoiner(false);
+        setCollaborators([]);
+        colorIndexRef.current = 0;
     }, []);
 
     const stopSharing = useCallback(async () => {
@@ -170,6 +232,7 @@ export function useCollab(): UseCollabResult {
         setIsSharing(false);
         setShareUrl(null);
         setRoomId(null);
+        setIsJoiner(false);
         setCollaborators([]);
         colorIndexRef.current = 0;
     }, [roomId]);
@@ -183,8 +246,12 @@ export function useCollab(): UseCollabResult {
         shareUrl,
         collaborators,
         connectionStatus,
+        roomId,
+        isJoiner,
         startSharing,
         stopSharing,
+        joinRoom,
+        leaveRoom,
         updatePresence,
     };
 }
