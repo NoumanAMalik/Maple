@@ -21,7 +21,10 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	router := httpapi.NewRouter(cfg, logger)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	router := httpapi.NewRouter(ctx, cfg, logger)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
@@ -44,10 +47,11 @@ func main() {
 	<-quit
 
 	logger.Info("shutting down server")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("server shutdown error", "error", err)
 	}
 

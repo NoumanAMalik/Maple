@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 
 const version = "0.1.0"
 
-func NewRouter(cfg *config.Config, logger *slog.Logger) http.Handler {
+func NewRouter(ctx context.Context, cfg *config.Config, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -33,7 +34,7 @@ func NewRouter(cfg *config.Config, logger *slog.Logger) http.Handler {
 		MaxAge:           300,
 	}))
 
-	registry := collab.NewRoomRegistry(logger)
+	registry := collab.NewRoomRegistry(ctx, logger)
 	wsHandler := collab.NewWSHandler(registry, logger)
 	roomHandlers := NewRoomHandlers(registry, wsHandler, logger, cfg.BaseURL)
 

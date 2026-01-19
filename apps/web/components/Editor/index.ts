@@ -1,5 +1,6 @@
 export { ActivityBar } from "./ActivityBar";
 export { CodeEditor } from "./CodeEditor";
+export { CollaboratorCursor, CollaboratorCursors } from "./CollaboratorCursor";
 export { CommandPalette } from "./CommandPalette";
 export { CursorRenderer } from "./CursorRenderer";
 export { EditorPane } from "./EditorPane";
@@ -11,5 +12,7 @@ export { HiddenTextarea } from "./HiddenTextarea";
 export { Line } from "./Line";
 export { LineRenderer } from "./LineRenderer";
 export { SelectionRenderer } from "./SelectionRenderer";
+export { ShareButton } from "./ShareButton";
+export { SharePopover } from "./SharePopover";
 export { TabBar } from "./TabBar";
 export { WelcomeScreen } from "./WelcomeScreen";

@@ -900,55 +900,68 @@ interface OutboxOp {
 
 ---
 
-### Phase 0: Monorepo Setup (1-3 hours)
+### Phase 0: Monorepo Setup ✅ COMPLETE
 
 **Tasks:**
-- [ ] Move existing Next.js code to `apps/web/`
-- [ ] Create `apps/collab/` with Go module
-- [ ] Add Turborepo configuration
-- [ ] Create `packages/protocol/` with initial types
-- [ ] Set up `turbo dev` to run both services
+- [x] Move existing Next.js code to `apps/web/`
+- [x] Create `apps/collab/` with Go module
+- [x] Add Turborepo configuration
+- [x] Create `packages/protocol/` with initial types
+- [x] Set up `turbo dev` to run both services
 
-**Milestone:** `turbo dev` runs Next.js + Go placeholder server
+**Milestone:** ✅ `turbo dev` runs Next.js + Go placeholder server
 
 ---
 
-### Phase 1: Go Server Skeleton (2-4 hours)
+### Phase 1: Go Server Skeleton + Room Management ✅ COMPLETE
 
 **Tasks:**
-- [ ] Set up Chi router with basic middleware (CORS, logging, recovery)
-- [ ] Add slog structured logging
-- [ ] Health check endpoint (`GET /health`)
-- [ ] Basic Dockerfile for Railway deployment
-- [ ] **No database yet** — server is stateless
+- [x] Set up Chi router with basic middleware (CORS, logging, recovery)
+- [x] Add slog structured logging
+- [x] Health check endpoint (`GET /health` and `GET /v1/health`)
+- [x] Basic Dockerfile for Railway deployment
+- [x] **No database yet** — server is stateless
+- [x] In-memory RoomRegistry (`internal/collab/registry.go`)
+- [x] Room + Client structs with sync.Map (`internal/collab/room.go`)
+- [x] REST endpoints: `POST /v1/rooms`, `GET /v1/rooms/:roomId`, `DELETE /v1/rooms/:roomId`
+- [x] WebSocket upgrade endpoint: `GET /v1/rooms/:roomId/ws`
+- [x] WebSocket handler with hello → welcome flow (`internal/collab/handler.go`)
+- [x] Client read/write goroutines with broadcast helper
+- [x] User joined/left notifications
+- [x] railway.json configuration
 
-**Milestone:** Go server deploys to Railway, health endpoint returns OK
+**Milestone:** ✅ Go server deployed to Railway at `maple-production-1b30.up.railway.app`
+
+**Deployed Infrastructure:**
+- Go collab server: Railway (`https://maple-production-1b30.up.railway.app`)
+- Next.js frontend: Vercel (configured with `NEXT_PUBLIC_COLLAB_URL`)
 
 ---
 
-### Phase 2: Anonymous WebSocket Rooms + Presence (1-2 days)
+### Phase 2: Anonymous WebSocket Rooms + Presence ✅ COMPLETE
 
 **Goal:** User clicks "Share" on a local file → creates a shareable link → others join and see cursors
 
 **Backend Tasks:**
-- [ ] `POST /v1/share` — creates room, returns `{ roomId: "abc123" }`
-- [ ] `DELETE /v1/share/:roomId` — owner closes room (or auto-close on disconnect)
-- [ ] WebSocket upgrade at `/v1/share/:roomId/ws`
-- [ ] Hub manages `roomId → *Room` map (in-memory only)
-- [ ] Room stores document content in memory
-- [ ] First client sends initial content; subsequent clients receive it
-- [ ] Presence broadcasting (cursors, selections)
-- [ ] Heartbeat/ping-pong for connection health
-- [ ] Room auto-destructs when owner disconnects (or after timeout)
+- [x] `POST /v1/rooms` — creates room, returns `{ roomId, shareUrl }`
+- [x] `DELETE /v1/rooms/:roomId` — delete room
+- [x] WebSocket upgrade at `/v1/rooms/:roomId/ws`
+- [x] Hub manages `roomId → *Room` map (in-memory only)
+- [x] Room stores document content in memory
+- [x] First client sends initial content; subsequent clients receive it
+- [x] Presence broadcasting (cursors, selections) — `handlePresence()` in handler.go
+- [x] Heartbeat/ping-pong for connection health — 30s ping in WriteLoop
+- [x] Room auto-cleanup after 5 minutes when empty — cleanupLoop in registry.go
 
 **Frontend Tasks:**
-- [ ] "Share" button in editor toolbar
-- [ ] Generate share link (e.g., `maple.dev/share/abc123`)
-- [ ] CollabClient connects to room WebSocket
-- [ ] Display collaborator cursors
-- [ ] "Stop Sharing" button clears room
+- [x] "Share" button in editor toolbar — ShareButton.tsx
+- [x] Generate share link with copy functionality — SharePopover.tsx
+- [x] CollabClient WebSocket connection — lib/collab/client.ts
+- [x] Display collaborator cursors with colors — CollaboratorCursor.tsx
+- [x] "Stop Sharing" button clears room — SharePopover.tsx
+- [x] useCollab hook for React integration — hooks/useCollab.ts
 
-**Milestone:** Two browsers can open same link, see each other's cursors in real-time
+**Milestone:** ✅ Two browsers can open same link, see each other's cursors in real-time
 
 ---
 
@@ -971,14 +984,14 @@ interface OutboxOp {
 
 ---
 
-### Phase 4: Railway Deployment Validation (2-4 hours)
+### Phase 4: Production Validation (2-4 hours)
 
-**Goal:** Prove the anonymous sharing works in production on Railway
+**Goal:** Prove the anonymous sharing works in production
 
 **Tasks:**
-- [ ] Deploy Go server to Railway
-- [ ] Deploy Next.js to Railway (or Vercel)
-- [ ] Configure CORS for production domains
+- [x] Deploy Go server to Railway
+- [x] Deploy Next.js to Vercel
+- [x] Configure CORS for production domains
 - [ ] Test WebSocket connections work through Railway's proxy
 - [ ] Test room creation, joining, real-time sync
 - [ ] Test room cleanup on disconnect

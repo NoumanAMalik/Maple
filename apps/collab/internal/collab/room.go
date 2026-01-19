@@ -19,6 +19,8 @@ type Client struct {
 	send        chan []byte
 	ctx         context.Context
 	cancel      context.CancelFunc
+	Presence    *Presence
+	mu          sync.RWMutex
 }
 
 type Room struct {
@@ -133,20 +135,44 @@ func (r *Room) GetPresenceList(excludeClientID string) []PresenceInfo {
 		if client.ID == excludeClientID {
 			return true
 		}
+		client.mu.RLock()
+		clientPresence := Presence{}
+		if client.Presence != nil {
+			clientPresence = *client.Presence
+		}
+		client.mu.RUnlock()
 		presence = append(presence, PresenceInfo{
 			Actor: ActorInfo{
 				ClientID:    client.ID,
 				DisplayName: client.DisplayName,
 				Color:       client.Color,
 			},
+			Presence: clientPresence,
 		})
 		return true
 	})
 	return presence
 }
 
+func (c *Client) UpdatePresence(cursor *Position, selection *Selection) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Presence = &Presence{
+		Cursor:    cursor,
+		Selection: selection,
+	}
+}
+
+func (c *Client) GetPresence() *Presence {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Presence
+}
+
 func (c *Client) WriteLoop() {
+	pingTicker := time.NewTicker(30 * time.Second)
 	defer func() {
+		pingTicker.Stop()
 		c.cancel()
 		c.Conn.Close(websocket.StatusNormalClosure, "")
 	}()
@@ -155,6 +181,13 @@ func (c *Client) WriteLoop() {
 		select {
 		case <-c.ctx.Done():
 			return
+		case <-pingTicker.C:
+			ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
+			err := c.Conn.Ping(ctx)
+			cancel()
+			if err != nil {
+				return
+			}
 		case msg, ok := <-c.send:
 			if !ok {
 				return

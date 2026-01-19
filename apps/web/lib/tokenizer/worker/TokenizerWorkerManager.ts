@@ -22,10 +22,7 @@ export class TokenizerWorkerManager {
         }
 
         // Create worker using Next.js compatible approach
-        this.worker = new Worker(
-            new URL("./tokenizer.worker.ts", import.meta.url),
-            { type: "module" }
-        );
+        this.worker = new Worker(new URL("./tokenizer.worker.ts", import.meta.url), { type: "module" });
 
         this.worker.onmessage = (event: MessageEvent<TokenizerWorkerResponse>) => {
             if (this.isDisposed) return;
@@ -42,11 +39,7 @@ export class TokenizerWorkerManager {
                 case "update-complete":
                     // Ignore outdated responses
                     if (response.version < this.lastSentVersion) return;
-                    this.callback.onTokensReady(
-                        response.version,
-                        response.changedFromLine,
-                        response.lines
-                    );
+                    this.callback.onTokensReady(response.version, response.changedFromLine, response.lines);
                     break;
 
                 case "error":
@@ -83,7 +76,7 @@ export class TokenizerWorkerManager {
         changedFromLine: number,
         linesFromChanged: string[],
         totalLineCount: number,
-        version: number
+        version: number,
     ): void {
         if (this.isDisposed) return;
 
