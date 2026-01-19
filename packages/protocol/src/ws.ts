@@ -24,6 +24,7 @@ export interface PresenceMessage {
     t: "presence";
     cursor: Position;
     selection?: Selection;
+    displayName?: string;
 }
 
 export type ClientMessage = HelloMessage | OpMessage | PresenceMessage;

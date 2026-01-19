@@ -23,6 +23,7 @@ function generateClientId(): string {
 export class CollabClient {
     private ws: WebSocket | null = null;
     private clientId: string;
+    private displayName: string | null = null;
     private roomId: string | null = null;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
@@ -41,6 +42,14 @@ export class CollabClient {
 
     getClientId(): string {
         return this.clientId;
+    }
+
+    getDisplayName(): string | null {
+        return this.displayName;
+    }
+
+    setDisplayName(name: string): void {
+        this.displayName = name;
     }
 
     getRoomId(): string | null {
@@ -186,6 +195,7 @@ export class CollabClient {
             t: "presence",
             cursor,
             selection,
+            displayName: this.displayName ?? undefined,
         };
 
         this.send(presence);
