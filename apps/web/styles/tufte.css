@@ -1,0 +1,116 @@
+/* Tufte CSS - Sidenotes and Margin Notes */
+
+:root {
+    --tufte-sidenote-width: 50%;
+    --tufte-sidenote-margin: -55%;
+    --tufte-sidenote-font-size: 0.8rem;
+    --tufte-sidenote-line-height: 1.3;
+    --tufte-sidenote-color: inherit;
+    --tufte-sidenote-number-color: inherit;
+    --tufte-mobile-breakpoint: 760px;
+}
+
+/* Counter for sidenote numbering */
+body {
+    counter-reset: sidenote-counter;
+}
+
+/* Sidenote number - the superscript reference in main text */
+.sidenote-number {
+    counter-increment: sidenote-counter;
+}
+
+.sidenote-number::after,
+.sidenote::before {
+    font-feature-settings:
+        "kern" 1,
+        "liga" 1;
+    position: relative;
+    vertical-align: baseline;
+}
+
+.sidenote-number::after {
+    content: counter(sidenote-counter);
+    font-size: 0.7rem;
+    top: -0.5rem;
+    left: 0.1rem;
+    color: var(--tufte-sidenote-number-color);
+}
+
+.sidenote::before {
+    content: counter(sidenote-counter) " ";
+    font-size: 0.7rem;
+    top: -0.5rem;
+    color: var(--tufte-sidenote-number-color);
+}
+
+/* Hidden checkbox for toggling notes on mobile */
+.margin-toggle {
+    display: none;
+}
+
+/* Label for toggle - hidden on desktop */
+label.margin-toggle:not(.sidenote-number) {
+    display: none;
+}
+
+/* Sidenote and marginnote positioning */
+.sidenote,
+.marginnote {
+    float: right;
+    clear: right;
+    margin-right: var(--tufte-sidenote-margin);
+    width: var(--tufte-sidenote-width);
+    margin-top: 0.3rem;
+    margin-bottom: 0;
+    font-size: var(--tufte-sidenote-font-size);
+    line-height: var(--tufte-sidenote-line-height);
+    vertical-align: baseline;
+    position: relative;
+    color: var(--tufte-sidenote-color);
+}
+
+/* Marginnotes don't have numbers */
+.marginnote {
+    /* No counter needed */
+}
+
+/* Responsive: mobile styles */
+@media (max-width: 760px) {
+    /* Show toggle labels on mobile */
+    label.margin-toggle:not(.sidenote-number) {
+        display: inline;
+        cursor: pointer;
+    }
+
+    /* Indicate clickable toggle */
+    label.margin-toggle.sidenote-number {
+        cursor: pointer;
+    }
+
+    /* Hide notes by default on mobile */
+    .sidenote,
+    .marginnote {
+        display: none;
+    }
+
+    /* Show notes when checkbox is checked */
+    .margin-toggle:checked + .sidenote,
+    .margin-toggle:checked + .marginnote {
+        display: block;
+        float: left;
+        left: 1rem;
+        clear: both;
+        width: 95%;
+        margin: 1rem 2.5%;
+        vertical-align: baseline;
+        position: relative;
+    }
+}
+
+/* Toggle symbol styling for mobile */
+label.margin-toggle:not(.sidenote-number)::before {
+    content: "⊕";
+    font-size: 0.9rem;
+    margin-left: 0.2rem;
+}

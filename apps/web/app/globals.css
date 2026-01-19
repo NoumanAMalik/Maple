@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+:root {
+    /* Base colors - Bearded Theme Black & Gold */
+    --background: #111418;
+    --foreground: #e3e3e3;
+
+    /* Editor colors (Bearded Theme Black & Gold) */
+    --editor-bg: #111418;
+    --editor-fg: #e3e3e3;
+    --editor-selection: rgba(42, 53, 64, 0.4);
+    --editor-line-number: #5a5a5a;
+    --editor-line-number-active: #c7910c;
+    --editor-gutter: #111418;
+    --editor-cursor: #c7910c;
+    --editor-active-line: rgba(26, 29, 35, 0.4);
+
+    /* Find & Replace match highlighting */
+    --match-highlight: rgba(255, 200, 0, 0.3);
+    --match-current: rgba(255, 150, 0, 0.6);
+
+    /* Syntax highlighting colors (Bearded Theme palette) */
+    --syntax-keyword: #11b7d4;
+    --syntax-string: #c62f52;
+    --syntax-number: #38c7bd;
+    --syntax-comment: #00a884;
+    --syntax-function: #c7910c;
+    --syntax-variable: #d46ec0;
+    --syntax-operator: #e3e3e3;
+    --syntax-punctuation: #e3e3e3;
+    --syntax-class: #a85ff1;
+    --syntax-constant: #d4770c;
+    --syntax-parameter: #d46ec0;
+    --syntax-property: #d46ec0;
+    --syntax-tag: #11b7d4;
+    --syntax-attribute: #d46ec0;
+    --syntax-regex: #e35535;
+
+    /* UI colors */
+    --ui-border: #2a2d33;
+    --ui-hover: #1a1d23;
+    --ui-active: #2a3540;
+    --ui-accent: #c7910c;
+    --ui-accent-hover: #d4a00c;
+    --ui-tab-bg: #0d0f12;
+    --ui-tab-active-bg: #111418;
+    --ui-sidebar-bg: #0d0f12;
+    --ui-statusbar-bg: #0d0f12;
+
+    /* Semantic level colors */
+    --level-danger: #e35535;
+    --level-info: #11b7d4;
+    --level-success: #00a884;
+    --level-warning: #d4770c;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-jetbrains-mono);
+    --font-serif: var(--font-instrument-serif);
+
+    /* Landing page colors */
+    --color-maple-cream: #fbf7f4;
+    --color-maple-warm: #f5ede6;
+    --color-maple-text: #1a1612;
+    --color-maple-text-secondary: #6b6056;
+    --color-maple-accent: #c17f59;
+    --color-maple-accent-hover: #a86b48;
+    --color-maple-border: #e8e0d8;
+
+    /* Editor theme colors */
+    --color-editor-bg: var(--editor-bg);
+    --color-editor-fg: var(--editor-fg);
+    --color-editor-selection: var(--editor-selection);
+    --color-editor-line-number: var(--editor-line-number);
+    --color-editor-cursor: var(--editor-cursor);
+    --color-editor-active-line: var(--editor-active-line);
+
+    /* Syntax colors */
+    --color-syntax-keyword: var(--syntax-keyword);
+    --color-syntax-string: var(--syntax-string);
+    --color-syntax-number: var(--syntax-number);
+    --color-syntax-comment: var(--syntax-comment);
+    --color-syntax-function: var(--syntax-function);
+    --color-syntax-variable: var(--syntax-variable);
+    --color-syntax-operator: var(--syntax-operator);
+    --color-syntax-class: var(--syntax-class);
+    --color-syntax-constant: var(--syntax-constant);
+    --color-syntax-tag: var(--syntax-tag);
+    --color-syntax-attribute: var(--syntax-attribute);
+
+    /* UI colors */
+    --color-ui-border: var(--ui-border);
+    --color-ui-hover: var(--ui-hover);
+    --color-ui-active: var(--ui-active);
+    --color-ui-accent: var(--ui-accent);
+    --color-ui-tab-bg: var(--ui-tab-bg);
+    --color-ui-tab-active-bg: var(--ui-tab-active-bg);
+    --color-ui-sidebar-bg: var(--ui-sidebar-bg);
+    --color-ui-statusbar-bg: var(--ui-statusbar-bg);
+
+    /* Semantic level colors */
+    --color-level-danger: var(--level-danger);
+    --color-level-info: var(--level-info);
+    --color-level-success: var(--level-success);
+    --color-level-warning: var(--level-warning);
+}
+
+html,
+body {
+    overscroll-behavior: none;
+}
+
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Selection styling */
+::selection {
+    background: var(--editor-selection);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--editor-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #424242;
+    border: 3px solid var(--editor-bg);
+    border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
+}
+
+/* Find & Replace animations - slide in from top-right */
+@keyframes slideInFromTopRight {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) translateX(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+    }
+}
+
+@keyframes slideOutToTopRight {
+    from {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px) translateX(8px);
+    }
+}
+
+/* Command Palette animations - scale up with backdrop fade */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animation utility classes */
+.animate-slideInFromTopRight {
+    animation: slideInFromTopRight 0.15s ease-out;
+}
+
+.animate-slideOutToTopRight {
+    animation: slideOutToTopRight 0.15s ease-out forwards;
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.15s ease-out;
+}
+
+.animate-scaleIn {
+    animation: scaleIn 0.15s ease-out;
+}
+
+/* Close animations for Command Palette */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes scaleOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+.animate-fadeOut {
+    animation: fadeOut 0.15s ease-out forwards;
+}
+
+.animate-scaleOut {
+    animation: scaleOut 0.15s ease-out forwards;
+}

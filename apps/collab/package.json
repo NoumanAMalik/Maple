@@ -1,0 +1,11 @@
+{
+    "name": "@maple/collab",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "go run ./cmd/collab",
+        "build": "go build -o bin/collab ./cmd/collab",
+        "test": "go test ./...",
+        "lint": "go vet ./..."
+    }
+}
