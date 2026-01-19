@@ -40,10 +40,7 @@ function tokenizeIncremental(
     version: number,
 ): TokenizerWorkerResponse {
     // Update shadow document
-    documentLines = [
-        ...documentLines.slice(0, changedFromLine - 1),
-        ...linesFromChanged,
-    ];
+    documentLines = [...documentLines.slice(0, changedFromLine - 1), ...linesFromChanged];
 
     // Ensure correct length
     if (documentLines.length > totalLineCount) {
@@ -59,10 +56,8 @@ function tokenizeIncremental(
     }
 
     // Start state from previous line or initial
-    let state = unchangedCount > 0
-        ? newHighlightLines[unchangedCount - 1].stateAfter
-        : getInitialLineState(language);
-    
+    let state = unchangedCount > 0 ? newHighlightLines[unchangedCount - 1].stateAfter : getInitialLineState(language);
+
     let stateChanged = true;
     let i = unchangedCount;
 
@@ -165,10 +160,7 @@ self.onmessage = (event: MessageEvent<TokenizerWorkerRequest>) => {
                         request.version,
                     );
                     if (response.type === "update-complete") {
-                        highlightLines = [
-                            ...highlightLines.slice(0, request.changedFromLine - 1),
-                            ...response.lines,
-                        ];
+                        highlightLines = [...highlightLines.slice(0, request.changedFromLine - 1), ...response.lines];
                         highlightLines.length = request.totalLineCount;
                     }
                     self.postMessage(response);

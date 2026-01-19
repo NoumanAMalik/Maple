@@ -8,10 +8,12 @@ import { Gutter } from "./Gutter";
 import { LineRenderer } from "./LineRenderer";
 import { CursorRenderer } from "./CursorRenderer";
 import { SelectionRenderer } from "./SelectionRenderer";
+import { CollaboratorCursors } from "./CollaboratorCursor";
 import { HiddenTextarea } from "./HiddenTextarea";
 import { createCoordinateConverter, pixelToPosition } from "@/lib/editor/coordinates";
 import type { EditorConfig, CursorPosition } from "@/types/editor";
 import type { SearchMatch } from "@/lib/search/findInDocument";
+import type { Collaborator } from "@/hooks/useCollab";
 
 interface CodeEditorProps {
     /** Initial content to display */
@@ -28,6 +30,8 @@ interface CodeEditorProps {
     searchMatches?: SearchMatch[];
     /** Current match index for highlighting */
     currentMatchIndex?: number;
+    /** Remote collaborator cursors */
+    collaborators?: Collaborator[];
 }
 
 /**
@@ -43,6 +47,7 @@ export function CodeEditor({
     autoFocus = true,
     searchMatches,
     currentMatchIndex,
+    collaborators = [],
 }: CodeEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -329,6 +334,15 @@ export function CodeEditor({
                             charWidth={coordinateConverter.charWidth}
                             config={editor.config}
                             isFocused={isFocused}
+                        />
+
+                        {/* Remote collaborator cursors */}
+                        <CollaboratorCursors
+                            collaborators={collaborators}
+                            charWidth={coordinateConverter.charWidth}
+                            config={editor.config}
+                            firstVisibleLine={viewState.firstVisibleLine}
+                            lastVisibleLine={viewState.lastVisibleLine}
                         />
                     </div>
                 </div>

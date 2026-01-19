@@ -7,6 +7,7 @@ import TufteMarkdown from "@/components/markdown/TufteMarkdown";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useFindReplace } from "@/hooks/useFindReplace";
 import type { CursorPosition } from "@/types/editor";
+import type { Collaborator } from "@/hooks/useCollab";
 
 interface EditorPaneProps {
     tabId: string;
@@ -14,6 +15,7 @@ interface EditorPaneProps {
     showFindReplace?: boolean;
     onCloseFindReplace?: () => void;
     onContentChange?: (content: string) => void;
+    collaborators?: Collaborator[];
 }
 
 export const EditorPane = memo(function EditorPane({
@@ -22,6 +24,7 @@ export const EditorPane = memo(function EditorPane({
     showFindReplace = false,
     onCloseFindReplace,
     onContentChange: onContentChangeCallback,
+    collaborators = [],
 }: EditorPaneProps) {
     const { state, dispatch, getFileSystem, saveFile } = useWorkspace();
     const [content, setContent] = useState("");
@@ -176,6 +179,7 @@ export const EditorPane = memo(function EditorPane({
                 autoFocus
                 searchMatches={findReplaceHook.matches}
                 currentMatchIndex={findReplaceHook.currentMatchIndex}
+                collaborators={collaborators}
             />
             {onCloseFindReplace && (
                 <FindReplace

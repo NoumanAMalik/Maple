@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
     ActivityBar,
     Explorer,
@@ -9,10 +9,13 @@ import {
     WelcomeScreen,
     CommandPalette,
     FindReplaceSidebar,
+    ShareButton,
+    SharePopover,
 } from "@/components/Editor";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { registerDefaultCommands } from "@/lib/commands/defaultCommands";
 import { useFindReplace } from "@/hooks/useFindReplace";
+import { useCollab } from "@/hooks/useCollab";
 import { cn } from "@/lib/utils";
 import type { CursorPosition } from "@/types/editor";
 
@@ -42,6 +45,10 @@ function EditorContent() {
     const [cursorPosition, setCursorPosition] = useState<CursorPosition>({ line: 1, column: 1 });
     const [showFindReplace, setShowFindReplace] = useState(false);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
+    const [showSharePopover, setShowSharePopover] = useState(false);
+    const shareButtonRef = useRef<HTMLButtonElement>(null);
+
+    const collab = useCollab();
 
     // Get active tab content for find/replace
     const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
@@ -140,6 +147,35 @@ function EditorContent() {
         // Focus will be handled by CodeEditor
     }, []);
 
+    // Share popover handlers
+    const toggleSharePopover = useCallback(() => {
+        setShowSharePopover((prev) => !prev);
+    }, []);
+
+    const closeSharePopover = useCallback(() => {
+        setShowSharePopover(false);
+    }, []);
+
+    const handleStartSharing = useCallback(async () => {
+        try {
+            await collab.startSharing(activeContent, activeTab?.language ?? undefined);
+        } catch (error) {
+            console.error("[EditorPage] Failed to start sharing:", error);
+        }
+    }, [collab, activeContent, activeTab?.language]);
+
+    const handleStopSharing = useCallback(() => {
+        collab.stopSharing();
+        setShowSharePopover(false);
+    }, [collab]);
+
+    // Update presence when cursor changes
+    useEffect(() => {
+        if (collab.isSharing) {
+            collab.updatePresence(cursorPosition);
+        }
+    }, [collab, cursorPosition]);
+
     // Register default commands
     useEffect(() => {
         console.log("[EditorPage] Registering default commands - useEffect triggered");
@@ -230,8 +266,28 @@ function EditorContent() {
 
     return (
         <div className="flex h-screen w-full flex-col bg-[var(--editor-bg)]">
-            {/* Tab Bar */}
-            <TabBar />
+            {/* Tab Bar with Share Button */}
+            <div className="flex items-stretch border-b border-[var(--ui-border)]">
+                <div className="flex-1 overflow-hidden">
+                    <TabBar />
+                </div>
+                <div className="relative flex items-center border-l border-[var(--ui-border)] px-2">
+                    <button ref={shareButtonRef} type="button" className="contents">
+                        <ShareButton isSharing={collab.isSharing} onClick={toggleSharePopover} />
+                    </button>
+                    <SharePopover
+                        isOpen={showSharePopover}
+                        onClose={closeSharePopover}
+                        isSharing={collab.isSharing}
+                        shareUrl={collab.shareUrl}
+                        collaborators={collab.collaborators}
+                        connectionStatus={collab.connectionStatus}
+                        onStartSharing={handleStartSharing}
+                        onStopSharing={handleStopSharing}
+                        anchorRef={shareButtonRef}
+                    />
+                </div>
+            </div>
 
             {/* Main Editor Area */}
             <div className="flex flex-1 overflow-hidden">
@@ -244,6 +300,7 @@ function EditorContent() {
                             showFindReplace={showFindReplace}
                             onCloseFindReplace={closeFindReplace}
                             onContentChange={setActiveContent}
+                            collaborators={collab.collaborators}
                         />
                     ) : (
                         <WelcomeScreen />

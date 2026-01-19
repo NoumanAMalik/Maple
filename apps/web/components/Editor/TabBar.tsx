@@ -210,17 +210,14 @@ export const TabBar = memo(function TabBar() {
 
     if (state.tabs.length === 0) {
         return (
-            <div className="flex h-9 items-center border-b border-[var(--ui-border)] bg-[var(--ui-tab-bg)]">
+            <div className="flex h-9 items-center bg-[var(--ui-tab-bg)]">
                 <div className="px-4 text-sm text-[var(--editor-line-number)]">No files open</div>
             </div>
         );
     }
 
     return (
-        <div
-            className="flex h-9 items-center overflow-x-auto border-b border-[var(--ui-border)] bg-[var(--ui-tab-bg)]"
-            role="tablist"
-        >
+        <div className="flex h-9 items-center overflow-x-auto bg-[var(--ui-tab-bg)]" role="tablist">
             {state.tabs.map((tab, index) => {
                 const isActive = tab.id === state.activeTabId;
                 const isHovered = hoveredTab === tab.id;

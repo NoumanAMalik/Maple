@@ -34,7 +34,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
     const lastLanguageRef = useRef<LanguageId | null>(null);
     const workerManagerRef = useRef<TokenizerWorkerManager | null>(null);
     const usingWorkerRef = useRef<boolean>(false);
-    
+
     // State to trigger re-renders when worker responds
     const [workerVersion, setWorkerVersion] = useState(0);
 
@@ -74,7 +74,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                         onTokensReady: (respVersion, changedFromLine, lines) => {
                             // Apply tokens from worker
                             applyWorkerTokens(respVersion, changedFromLine, lines);
-                            setWorkerVersion(v => v + 1);
+                            setWorkerVersion((v) => v + 1);
                         },
                         onError: (error) => {
                             console.error("Tokenizer worker error:", error);
@@ -84,9 +84,9 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                                 language,
                                 getLine,
                                 lineCount,
-                                version
+                                version,
                             );
-                            setWorkerVersion(v => v + 1);
+                            setWorkerVersion((v) => v + 1);
                         },
                     });
                 }
@@ -98,7 +98,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                 }
 
                 workerManagerRef.current.init(language, allLines, version);
-                
+
                 // Initialize with empty state, will be filled by worker
                 highlightStateRef.current = {
                     language,
@@ -107,12 +107,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                 };
             } else {
                 // Use main thread for small files
-                highlightStateRef.current = createDocumentHighlightState(
-                    language,
-                    getLine,
-                    lineCount,
-                    version
-                );
+                highlightStateRef.current = createDocumentHighlightState(language, getLine, lineCount, version);
             }
 
             lastLanguageRef.current = language;
@@ -133,13 +128,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                     linesFromChanged.push(getLine(i));
                 }
 
-                workerManagerRef.current.update(
-                    language,
-                    changedFromLine,
-                    linesFromChanged,
-                    lineCount,
-                    version
-                );
+                workerManagerRef.current.update(language, changedFromLine, linesFromChanged, lineCount, version);
             } else {
                 // Main thread incremental update
                 highlightStateRef.current = updateDocumentHighlightState(
@@ -147,7 +136,7 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
                     getLine,
                     lineCount,
                     changedFromLine,
-                    version
+                    version,
                 );
             }
 
@@ -157,40 +146,42 @@ export function useDocumentHighlighting(options: UseDocumentHighlightingOptions)
     }, [language, version, getLine, getLineCount, getEditMetadata, clearEditMetadata]);
 
     // Helper to apply tokens from worker response
-    const applyWorkerTokens = useCallback((
-        respVersion: number,
-        changedFromLine: number,
-        lines: SerializableLineHighlight[]
-    ) => {
-        if (!highlightStateRef.current) {
+    const applyWorkerTokens = useCallback(
+        (respVersion: number, changedFromLine: number, lines: SerializableLineHighlight[]) => {
+            if (!highlightStateRef.current) {
+                highlightStateRef.current = {
+                    language,
+                    lines: lines as LineHighlight[],
+                    version: respVersion,
+                };
+                return;
+            }
+
+            // Apply partial update
+            const currentLines = highlightStateRef.current.lines;
+            const newLines: LineHighlight[] = [
+                ...currentLines.slice(0, changedFromLine - 1),
+                ...(lines as LineHighlight[]),
+            ];
+
             highlightStateRef.current = {
-                language,
-                lines: lines as LineHighlight[],
+                language: highlightStateRef.current.language,
+                lines: newLines,
                 version: respVersion,
             };
-            return;
-        }
+        },
+        [language],
+    );
 
-        // Apply partial update
-        const currentLines = highlightStateRef.current.lines;
-        const newLines: LineHighlight[] = [
-            ...currentLines.slice(0, changedFromLine - 1),
-            ...(lines as LineHighlight[]),
-        ];
-
-        highlightStateRef.current = {
-            language: highlightStateRef.current.language,
-            lines: newLines,
-            version: respVersion,
-        };
-    }, [language]);
-
-    const getTokens = useCallback((lineNumber: number): Token[] => {
-        if (!highlightStateRef.current) {
-            return [];
-        }
-        return getLineTokens(highlightStateRef.current, lineNumber);
-    }, [workerVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+    const getTokens = useCallback(
+        (lineNumber: number): Token[] => {
+            if (!highlightStateRef.current) {
+                return [];
+            }
+            return getLineTokens(highlightStateRef.current, lineNumber);
+        },
+        [workerVersion],
+    ); // eslint-disable-line react-hooks/exhaustive-deps
 
     return {
         getTokens,

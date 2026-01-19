@@ -65,6 +65,21 @@ type ErrorMessage struct {
 	Message string `json:"message"`
 }
 
+type PresenceMessage struct {
+	V         int        `json:"v"`
+	T         string     `json:"t"`
+	Cursor    Position   `json:"cursor"`
+	Selection *Selection `json:"selection,omitempty"`
+}
+
+type PresenceUpdateMessage struct {
+	V         int        `json:"v"`
+	T         string     `json:"t"`
+	Actor     ActorInfo  `json:"actor"`
+	Cursor    Position   `json:"cursor"`
+	Selection *Selection `json:"selection,omitempty"`
+}
+
 var clientColors = []string{
 	"#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
 	"#2196f3", "#00bcd4", "#009688", "#4caf50",
@@ -210,8 +225,27 @@ func (h *WSHandler) handleOp(client *Client, data []byte) {
 }
 
 func (h *WSHandler) handlePresence(client *Client, data []byte) {
-	// TODO: Implement presence broadcasting
-	h.logger.Debug("received presence message", "clientId", client.ID)
+	var msg PresenceMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		h.logger.Warn("invalid presence message", "clientId", client.ID, "error", err)
+		return
+	}
+
+	client.UpdatePresence(&msg.Cursor, msg.Selection)
+
+	update := PresenceUpdateMessage{
+		V: 1,
+		T: "presence_update",
+		Actor: ActorInfo{
+			ClientID:    client.ID,
+			DisplayName: client.DisplayName,
+			Color:       client.Color,
+		},
+		Cursor:    msg.Cursor,
+		Selection: msg.Selection,
+	}
+	updateData, _ := json.Marshal(update)
+	client.Room.Broadcast(updateData, client.ID)
 }
 
 func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, code, message string) {
