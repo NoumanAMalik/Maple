@@ -147,7 +147,8 @@ export function useCollab(): UseCollabResult {
 
         const data: CreateRoomResponse = await response.json();
         setRoomId(data.roomId);
-        setShareUrl(data.shareUrl);
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        setShareUrl(`${baseUrl}/editor?room=${data.roomId}`);
         setIsSharing(true);
 
         clientRef.current?.connect(data.roomId);
