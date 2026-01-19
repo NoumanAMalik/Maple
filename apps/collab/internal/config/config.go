@@ -27,7 +27,14 @@ func Load() *Config {
 
 	origins := []string{"http://localhost:3000"}
 	if env == "production" {
-		origins = append(origins, "https://maple.dev", "https://*.railway.app")
+		origins = append(origins,
+			"https://trymaple.dev",
+			"https://www.trymaple.dev",
+			"https://maple.dev",
+			"https://www.maple.dev",
+			"https://*.vercel.app",
+			"https://*.railway.app",
+		)
 	}
 
 	return &Config{
