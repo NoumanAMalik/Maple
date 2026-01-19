@@ -66,7 +66,9 @@ export class CollabClient {
 
         this.onConnectionChange?.("connecting");
 
-        const url = `${wsUrl}/ws/${this.roomId}`;
+        const wsProtocol = wsUrl.startsWith("https") ? "wss" : "ws";
+        const baseUrl = wsUrl.replace(/^https?/, wsProtocol);
+        const url = `${baseUrl}/v1/rooms/${this.roomId}/ws`;
         this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
