@@ -61,7 +61,8 @@ export type WorkspaceAction =
     | { type: "TOGGLE_DIRECTORY"; payload: { nodeId: string } }
     | { type: "REFRESH_TREE"; payload: { fileTree: TreeNode[] } }
     | { type: "REORDER_TABS"; payload: { fromIndex: number; toIndex: number } }
-    | { type: "TOGGLE_PREVIEW_MODE"; payload: { tabId: string } };
+    | { type: "TOGGLE_PREVIEW_MODE"; payload: { tabId: string } }
+    | { type: "LOAD_COLLAB_SNAPSHOT"; payload: { content: string; language?: string; roomId: string } };
 
 /**
  * Context value exposed to consumers
