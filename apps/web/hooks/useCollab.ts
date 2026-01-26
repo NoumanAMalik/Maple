@@ -57,7 +57,7 @@ export interface UseCollabResult {
     recentChanges: ChangeEvent[];
     remoteOpsEvent: RemoteOpsEvent | null;
     snapshots: Snapshot[];
-    startSharing: (content: string, language?: string) => Promise<void>;
+    startSharing: (content: string, language?: string) => Promise<string>;
     stopSharing: () => void;
     joinRoom: (roomId: string) => Promise<{ snapshot: string; version: number }>;
     leaveRoom: () => void;
@@ -308,7 +308,7 @@ export function useCollab(): UseCollabResult {
         };
     }, [getNextColor, pushChangeEvent]);
 
-    const startSharing = useCallback(async (content: string, language?: string) => {
+    const startSharing = useCallback(async (content: string, language?: string): Promise<string> => {
         const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL;
         if (!collabUrl) {
             throw new Error("NEXT_PUBLIC_COLLAB_URL is not configured");
@@ -333,6 +333,8 @@ export function useCollab(): UseCollabResult {
         setIsSharing(true);
 
         clientRef.current?.connect(data.roomId);
+
+        return data.roomId;
     }, []);
 
     const joinRoom = useCallback((targetRoomId: string): Promise<{ snapshot: string; version: number }> => {

@@ -245,12 +245,37 @@ function EditorContent() {
     }, []);
 
     const handleStartSharing = useCallback(async () => {
+        if (!activeTab) return;
+
         try {
-            await collab.startSharing(activeContent, activeTab?.language ?? undefined);
+            // Get content directly from the active tab, not from stale activeContent state
+            let shareContent = activeTab.unsavedContent;
+
+            // If no unsaved content, read from filesystem
+            if (shareContent === undefined) {
+                const fs = getFileSystem();
+                if (fs) {
+                    const file = await fs.readFile(activeTab.fileId);
+                    shareContent = file?.content ?? "";
+                }
+            }
+
+            const roomId = await collab.startSharing(shareContent ?? "", activeTab.language ?? undefined);
+
+            // Switch the host to a dedicated "Shared Document" tab so both host and guest
+            // are editing the same buffer (not the host's original file)
+            dispatch({
+                type: "LOAD_COLLAB_SNAPSHOT",
+                payload: {
+                    content: shareContent ?? "",
+                    language: activeTab.language ?? undefined,
+                    roomId,
+                },
+            });
         } catch (error) {
             console.error("[EditorPage] Failed to start sharing:", error);
         }
-    }, [collab, activeContent, activeTab?.language]);
+    }, [collab, activeTab, dispatch, getFileSystem]);
 
     const handleStopSharing = useCallback(async () => {
         await persistSharedContent();
