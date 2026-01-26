@@ -7,6 +7,8 @@ import type {
     ServerMessage,
     HelloMessage,
     PresenceMessage,
+    OpMessage,
+    Operation,
 } from "@maple/protocol";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
@@ -28,11 +30,14 @@ export class CollabClient {
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    private pendingOps: Array<{ opId: string; ops: Operation[]; baseVersion: number }> = [];
+    private localVersion = 0;
 
     onWelcome: ((snapshot: string, version: number, presence: PresenceInfo[]) => void) | null = null;
     onUserJoined: ((actor: Actor) => void) | null = null;
     onUserLeft: ((clientId: string) => void) | null = null;
     onPresenceUpdate: ((actor: Actor, cursor: Position, selection?: Selection) => void) | null = null;
+    onRemoteOperations: ((ops: Operation[], actor: Actor, version: number) => void) | null = null;
     onConnectionChange: ((status: ConnectionStatus) => void) | null = null;
     onError: ((error: { code: string; message: string }) => void) | null = null;
 
@@ -63,6 +68,8 @@ export class CollabClient {
 
         this.roomId = roomId;
         this.reconnectAttempts = 0;
+        this.pendingOps = [];
+        this.localVersion = 0;
         this.establishConnection();
     }
 
@@ -135,6 +142,8 @@ export class CollabClient {
         switch (message.t) {
             case "welcome":
                 this.onConnectionChange?.("connected");
+                this.localVersion = message.serverVersion;
+                this.pendingOps = [];
                 this.onWelcome?.(message.snapshot, message.serverVersion, message.presence);
                 break;
 
@@ -155,13 +164,17 @@ export class CollabClient {
                 break;
 
             case "resync_required":
+                this.pendingOps = [];
                 if (this.roomId) {
                     this.sendHello();
                 }
                 break;
 
             case "ack":
+                this.handleAck(message.opId, message.newVersion);
+                break;
             case "remote_op":
+                this.handleRemoteOp(message);
                 break;
         }
     }
@@ -184,6 +197,8 @@ export class CollabClient {
         }
 
         this.roomId = null;
+        this.pendingOps = [];
+        this.localVersion = 0;
         this.onConnectionChange?.("disconnected");
     }
 
@@ -204,4 +219,128 @@ export class CollabClient {
     isConnected(): boolean {
         return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
     }
+
+    sendOperations(ops: Operation[], presence?: Presence): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        if (ops.length === 0) return;
+
+        const opId = generateOpId();
+        const baseVersion = this.localVersion + this.pendingOps.length;
+        const message: OpMessage = {
+            v: 1,
+            t: "op",
+            opId,
+            baseVersion,
+            ops,
+            presence,
+        };
+
+        this.pendingOps.push({ opId, ops, baseVersion });
+        this.send(message);
+    }
+
+    private handleAck(opId: string, newVersion: number): void {
+        this.pendingOps = this.pendingOps.filter((op) => op.opId !== opId);
+        this.localVersion = Math.max(this.localVersion, newVersion);
+    }
+
+    private handleRemoteOp(message: { version: number; actor: Actor; ops: Operation[] }): void {
+        const transformed = transformIncomingOps(message.ops, this.pendingOps, message.actor.clientId, this.clientId);
+        this.localVersion = Math.max(this.localVersion, message.version);
+        this.onRemoteOperations?.(transformed, message.actor, message.version);
+    }
+}
+
+function generateOpId(): string {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+        return crypto.randomUUID();
+    }
+    return `op_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function isNoop(op: Operation): boolean {
+    if (op.type === "insert") {
+        return op.text.length === 0;
+    }
+    return op.len <= 0;
+}
+
+function compareClientIds(a: string, b: string): number {
+    if (a === b) return 0;
+    return a < b ? -1 : 1;
+}
+
+function transformIncomingOps(
+    ops: Operation[],
+    pending: Array<{ ops: Operation[] }>,
+    remoteClientId: string,
+    localClientId: string,
+): Operation[] {
+    const transformed = ops.map((op) => ({ ...op }));
+
+    for (const pendingEntry of pending) {
+        for (let index = 0; index < transformed.length; index += 1) {
+            let incoming = transformed[index];
+            for (const localOp of pendingEntry.ops) {
+                incoming = transformOperation(incoming, localOp, remoteClientId, localClientId);
+            }
+            transformed[index] = incoming;
+        }
+    }
+
+    return transformed.filter((op) => !isNoop(op));
+}
+
+function transformOperation(op: Operation, other: Operation, opClientId: string, otherClientId: string): Operation {
+    if (isNoop(op)) {
+        return op;
+    }
+
+    if (op.type === "insert") {
+        if (other.type === "insert") {
+            if (op.pos > other.pos || (op.pos === other.pos && compareClientIds(opClientId, otherClientId) > 0)) {
+                op.pos += other.text.length;
+            }
+        } else {
+            const otherEnd = other.pos + other.len;
+            if (op.pos > otherEnd) {
+                op.pos -= other.len;
+            } else if (op.pos > other.pos) {
+                op.pos = other.pos;
+            }
+        }
+        return op;
+    }
+
+    if (other.type === "insert") {
+        if (op.pos >= other.pos) {
+            op.pos += other.text.length;
+        } else if (op.pos + op.len > other.pos) {
+            op.len += other.text.length;
+        }
+        return op;
+    }
+
+    const otherEnd = other.pos + other.len;
+    const opEnd = op.pos + op.len;
+
+    if (op.pos >= otherEnd) {
+        op.pos -= other.len;
+        return op;
+    }
+
+    if (opEnd <= other.pos) {
+        return op;
+    }
+
+    const overlapStart = Math.max(op.pos, other.pos);
+    const overlapEnd = Math.min(opEnd, otherEnd);
+    const overlapLen = overlapEnd - overlapStart;
+
+    op.len -= overlapLen;
+    if (other.pos < op.pos) {
+        op.pos = other.pos;
+    }
+
+    return op;
 }

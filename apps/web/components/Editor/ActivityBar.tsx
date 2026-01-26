@@ -29,6 +29,7 @@ import {
     Replace,
     ChevronUp,
     ChevronDown,
+    Link2,
 } from "lucide-react";
 
 interface ActivityBarProps {
@@ -36,6 +37,8 @@ interface ActivityBarProps {
     onToggleExplorer: () => void;
     isSearchOpen: boolean;
     onToggleSearch: () => void;
+    isShareOpen: boolean;
+    onToggleShare: () => void;
 }
 
 interface ShortcutCategory {
@@ -323,7 +326,14 @@ function getKeyIcon(key: string): React.ReactNode {
     return <span>{key}</span>;
 }
 
-export function ActivityBar({ isExplorerOpen, onToggleExplorer, isSearchOpen, onToggleSearch }: ActivityBarProps) {
+export function ActivityBar({
+    isExplorerOpen,
+    onToggleExplorer,
+    isSearchOpen,
+    onToggleSearch,
+    isShareOpen,
+    onToggleShare,
+}: ActivityBarProps) {
     const [showShortcuts, setShowShortcuts] = useState(false);
 
     return (
@@ -364,6 +374,24 @@ export function ActivityBar({ isExplorerOpen, onToggleExplorer, isSearchOpen, on
                             <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
                         )}
                         <SearchIcon className="h-5 w-5" />
+                    </button>
+                </Tooltip>
+
+                <Tooltip content="Share" side="left">
+                    <button
+                        type="button"
+                        onClick={onToggleShare}
+                        aria-label="Toggle Share"
+                        aria-pressed={isShareOpen}
+                        className={cn(
+                            "relative flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]",
+                            isShareOpen && "bg-[var(--ui-hover)]",
+                        )}
+                    >
+                        {isShareOpen && (
+                            <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
+                        )}
+                        <Link2 className="h-5 w-5" />
                     </button>
                 </Tooltip>
 
