@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CollabClient, type ConnectionStatus } from "@/lib/collab/client";
-import type { Actor, Position, Selection, CreateRoomResponse, Operation } from "@maple/protocol";
+import type { Actor, Position, Selection, CreateRoomResponse, Operation, Snapshot } from "@maple/protocol";
 
 export type { ConnectionStatus };
 
@@ -52,9 +52,11 @@ export interface UseCollabResult {
     connectionStatus: ConnectionStatus;
     roomId: string | null;
     isJoiner: boolean;
+    isOwner: boolean;
     displayName: string;
     recentChanges: ChangeEvent[];
     remoteOpsEvent: RemoteOpsEvent | null;
+    snapshots: Snapshot[];
     startSharing: (content: string, language?: string) => Promise<void>;
     stopSharing: () => void;
     joinRoom: (roomId: string) => Promise<{ snapshot: string; version: number }>;
@@ -62,6 +64,10 @@ export interface UseCollabResult {
     updatePresence: (cursor: Position, selection?: Selection) => void;
     sendOperations: (ops: Operation[]) => void;
     setDisplayName: (name: string) => void;
+    saveSnapshot: (content: string, message?: string) => void;
+    restoreSnapshot: (snapshotId: string) => void;
+    onSnapshotRestored: ((content: string, snapshotId: string, version: number) => void) | null;
+    setOnSnapshotRestored: (callback: ((content: string, snapshotId: string, version: number) => void) | null) => void;
 }
 
 const MAX_CHANGE_EVENTS = 20;
@@ -111,9 +117,11 @@ export function useCollab(): UseCollabResult {
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
     const [roomId, setRoomId] = useState<string | null>(null);
     const [isJoiner, setIsJoiner] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
     const [displayName, setDisplayNameState] = useState("You");
     const [recentChanges, setRecentChanges] = useState<ChangeEvent[]>([]);
     const [remoteOpsEvent, setRemoteOpsEvent] = useState<RemoteOpsEvent | null>(null);
+    const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
     const clientRef = useRef<CollabClient | null>(null);
     const colorIndexRef = useRef(0);
@@ -122,6 +130,7 @@ export function useCollab(): UseCollabResult {
         resolve: (value: { snapshot: string; version: number }) => void;
         reject: (reason: Error) => void;
     } | null>(null);
+    const onSnapshotRestoredRef = useRef<((content: string, snapshotId: string, version: number) => void) | null>(null);
 
     const getNextColor = useCallback(() => {
         const color = COLLABORATOR_COLORS[colorIndexRef.current % COLLABORATOR_COLORS.length];
@@ -186,7 +195,7 @@ export function useCollab(): UseCollabResult {
             setConnectionStatus(status);
         };
 
-        client.onWelcome = (snapshot, version, presence) => {
+        client.onWelcome = (snapshot, version, presence, snapshotsList, isOwnerFlag) => {
             const existingCollaborators = presence
                 .filter((p) => p.actor.clientId !== client.getClientId())
                 .map((p) => ({
@@ -197,6 +206,8 @@ export function useCollab(): UseCollabResult {
                     selection: p.presence.selection,
                 }));
             setCollaborators(existingCollaborators);
+            setSnapshots(snapshotsList);
+            setIsOwner(isOwnerFlag);
 
             client.sendPresence({ line: 1, column: 1 });
 
@@ -273,6 +284,25 @@ export function useCollab(): UseCollabResult {
             }
         };
 
+        client.onSnapshotCreated = (snapshot: Snapshot) => {
+            setSnapshots((prev) => [...prev, snapshot]);
+            // Clear recent keystroke changes when a snapshot is created
+            // This is the key change - instead of showing keystroke-by-keystroke changes,
+            // we now show meaningful diff between snapshots
+            setRecentChanges([]);
+        };
+
+        client.onSnapshotsList = (snapshotsList: Snapshot[]) => {
+            setSnapshots(snapshotsList);
+        };
+
+        client.onSnapshotRestored = (content: string, snapshotId: string, version: number) => {
+            // Clear changes since we're restoring to a previous state
+            setRecentChanges([]);
+            // Notify external listener (e.g., editor) about the restore
+            onSnapshotRestoredRef.current?.(content, snapshotId, version);
+        };
+
         return () => {
             client.disconnect();
         };
@@ -344,9 +374,11 @@ export function useCollab(): UseCollabResult {
         setShareUrl(null);
         setRoomId(null);
         setIsJoiner(false);
+        setIsOwner(false);
         setCollaborators([]);
         setRecentChanges([]);
         setRemoteOpsEvent(null);
+        setSnapshots([]);
         colorIndexRef.current = 0;
     }, []);
 
@@ -367,9 +399,11 @@ export function useCollab(): UseCollabResult {
         setShareUrl(null);
         setRoomId(null);
         setIsJoiner(false);
+        setIsOwner(false);
         setCollaborators([]);
         setRecentChanges([]);
         setRemoteOpsEvent(null);
+        setSnapshots([]);
         colorIndexRef.current = 0;
     }, [roomId]);
 
@@ -403,6 +437,21 @@ export function useCollab(): UseCollabResult {
         }
     }, []);
 
+    const saveSnapshot = useCallback((content: string, message?: string) => {
+        clientRef.current?.sendSave(content, message);
+    }, []);
+
+    const restoreSnapshot = useCallback((snapshotId: string) => {
+        clientRef.current?.restoreSnapshot(snapshotId);
+    }, []);
+
+    const setOnSnapshotRestored = useCallback(
+        (callback: ((content: string, snapshotId: string, version: number) => void) | null) => {
+            onSnapshotRestoredRef.current = callback;
+        },
+        [],
+    );
+
     return {
         isSharing,
         shareUrl,
@@ -410,9 +459,11 @@ export function useCollab(): UseCollabResult {
         connectionStatus,
         roomId,
         isJoiner,
+        isOwner,
         displayName,
         recentChanges,
         remoteOpsEvent,
+        snapshots,
         startSharing,
         stopSharing,
         joinRoom,
@@ -420,5 +471,9 @@ export function useCollab(): UseCollabResult {
         updatePresence,
         sendOperations,
         setDisplayName,
+        saveSnapshot,
+        restoreSnapshot,
+        onSnapshotRestored: onSnapshotRestoredRef.current,
+        setOnSnapshotRestored,
     };
 }

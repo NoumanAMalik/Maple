@@ -9,6 +9,10 @@ import type {
     PresenceMessage,
     OpMessage,
     Operation,
+    Snapshot,
+    SaveMessage,
+    RestoreMessage,
+    GetSnapshotsMessage,
 } from "@maple/protocol";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
@@ -33,13 +37,18 @@ export class CollabClient {
     private pendingOps: Array<{ opId: string; ops: Operation[]; baseVersion: number }> = [];
     private localVersion = 0;
 
-    onWelcome: ((snapshot: string, version: number, presence: PresenceInfo[]) => void) | null = null;
+    onWelcome:
+        | ((snapshot: string, version: number, presence: PresenceInfo[], snapshots: Snapshot[], isOwner: boolean) => void)
+        | null = null;
     onUserJoined: ((actor: Actor) => void) | null = null;
     onUserLeft: ((clientId: string) => void) | null = null;
     onPresenceUpdate: ((actor: Actor, cursor: Position, selection?: Selection) => void) | null = null;
     onRemoteOperations: ((ops: Operation[], actor: Actor, version: number) => void) | null = null;
     onConnectionChange: ((status: ConnectionStatus) => void) | null = null;
     onError: ((error: { code: string; message: string }) => void) | null = null;
+    onSnapshotCreated: ((snapshot: Snapshot) => void) | null = null;
+    onSnapshotsList: ((snapshots: Snapshot[]) => void) | null = null;
+    onSnapshotRestored: ((content: string, snapshotId: string, version: number) => void) | null = null;
 
     constructor() {
         this.clientId = generateClientId();
@@ -144,7 +153,13 @@ export class CollabClient {
                 this.onConnectionChange?.("connected");
                 this.localVersion = message.serverVersion;
                 this.pendingOps = [];
-                this.onWelcome?.(message.snapshot, message.serverVersion, message.presence);
+                this.onWelcome?.(
+                    message.snapshot,
+                    message.serverVersion,
+                    message.presence,
+                    message.snapshots,
+                    message.isOwner,
+                );
                 break;
 
             case "user_joined":
@@ -175,6 +190,17 @@ export class CollabClient {
                 break;
             case "remote_op":
                 this.handleRemoteOp(message);
+                break;
+            case "snapshot_created":
+                this.onSnapshotCreated?.(message.snapshot);
+                break;
+            case "snapshots_list":
+                this.onSnapshotsList?.(message.snapshots);
+                break;
+            case "snapshot_restored":
+                this.localVersion = message.version;
+                this.pendingOps = [];
+                this.onSnapshotRestored?.(message.content, message.snapshotId, message.version);
                 break;
         }
     }
@@ -248,6 +274,40 @@ export class CollabClient {
         const transformed = transformIncomingOps(message.ops, this.pendingOps, message.actor.clientId, this.clientId);
         this.localVersion = Math.max(this.localVersion, message.version);
         this.onRemoteOperations?.(transformed, message.actor, message.version);
+    }
+
+    // Snapshot methods
+    sendSave(content: string, message?: string): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+        const saveMsg: SaveMessage = {
+            v: 1,
+            t: "save",
+            content,
+            message,
+        };
+        this.send(saveMsg);
+    }
+
+    requestSnapshots(): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+        const msg: GetSnapshotsMessage = {
+            v: 1,
+            t: "get_snapshots",
+        };
+        this.send(msg);
+    }
+
+    restoreSnapshot(snapshotId: string): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+        const msg: RestoreMessage = {
+            v: 1,
+            t: "restore",
+            snapshotId,
+        };
+        this.send(msg);
     }
 }
 
