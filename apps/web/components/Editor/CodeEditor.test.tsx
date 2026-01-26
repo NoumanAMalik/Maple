@@ -106,6 +106,7 @@ const mockGetContent = vi.fn(() => "test content");
 
 const mockGetEditMetadata = vi.fn(() => null);
 const mockClearEditMetadata = vi.fn();
+const mockApplyRemoteOperations = vi.fn();
 
 const mockEditorState: EditorStateAPI = {
     cursor: { line: 1, column: 1 },
@@ -123,6 +124,7 @@ const mockEditorState: EditorStateAPI = {
     setSelection: mockSetSelection,
     getEditMetadata: mockGetEditMetadata,
     clearEditMetadata: mockClearEditMetadata,
+    applyRemoteOperations: mockApplyRemoteOperations,
 };
 
 vi.mock("@/hooks/useEditorState", () => ({

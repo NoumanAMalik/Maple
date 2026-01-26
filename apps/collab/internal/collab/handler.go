@@ -45,6 +45,8 @@ type WelcomeMessage struct {
 	ServerVersion int            `json:"serverVersion"`
 	Snapshot      string         `json:"snapshot"`
 	Presence      []PresenceInfo `json:"presence"`
+	Snapshots     []Snapshot     `json:"snapshots"`
+	IsOwner       bool           `json:"isOwner"`
 }
 
 type UserJoinedMessage struct {
@@ -80,6 +82,52 @@ type PresenceUpdateMessage struct {
 	Actor     ActorInfo  `json:"actor"`
 	Cursor    Position   `json:"cursor"`
 	Selection *Selection `json:"selection,omitempty"`
+}
+
+// Snapshot-related messages
+
+// SaveMessage - Client requests to save a snapshot
+type SaveMessage struct {
+	V       int    `json:"v"`
+	T       string `json:"t"`
+	Content string `json:"content"`
+	Message string `json:"message,omitempty"`
+}
+
+// RestoreMessage - Client requests to restore to a snapshot
+type RestoreMessage struct {
+	V          int    `json:"v"`
+	T          string `json:"t"`
+	SnapshotID string `json:"snapshotId"`
+}
+
+// GetSnapshotsMessage - Client requests the list of snapshots
+type GetSnapshotsMessage struct {
+	V int    `json:"v"`
+	T string `json:"t"`
+}
+
+// SnapshotCreatedMessage - Server notifies clients of a new snapshot
+type SnapshotCreatedMessage struct {
+	V        int      `json:"v"`
+	T        string   `json:"t"`
+	Snapshot Snapshot `json:"snapshot"`
+}
+
+// SnapshotsListMessage - Server sends list of snapshots
+type SnapshotsListMessage struct {
+	V         int        `json:"v"`
+	T         string     `json:"t"`
+	Snapshots []Snapshot `json:"snapshots"`
+}
+
+// SnapshotRestoredMessage - Server notifies clients of a restore
+type SnapshotRestoredMessage struct {
+	V          int    `json:"v"`
+	T          string `json:"t"`
+	Content    string `json:"content"`
+	SnapshotID string `json:"snapshotId"`
+	Version    int    `json:"version"`
 }
 
 var clientColors = []string{
@@ -141,6 +189,8 @@ func (h *WSHandler) HandleConnection(ctx context.Context, conn *websocket.Conn, 
 		ServerVersion: room.GetVersion(),
 		Snapshot:      room.GetSnapshot(),
 		Presence:      room.GetPresenceList(client.ID),
+		Snapshots:     room.GetSnapshots(),
+		IsOwner:       room.OwnerID == client.ID,
 	}
 	if err := client.Send(welcome); err != nil {
 		h.logger.Error("failed to send welcome", "error", err)
@@ -215,6 +265,12 @@ func (h *WSHandler) readLoop(client *Client) {
 			h.handleOp(client, data)
 		case "presence":
 			h.handlePresence(client, data)
+		case "save":
+			h.handleSave(client, data)
+		case "restore":
+			h.handleRestore(client, data)
+		case "get_snapshots":
+			h.handleGetSnapshots(client)
 		default:
 			h.logger.Warn("unknown message type", "type", base.T)
 		}
@@ -242,6 +298,9 @@ func (h *WSHandler) handleOp(client *Client, data []byte) {
 		h.logger.Warn("failed to apply ops", "clientId", client.ID, "error", err)
 		return
 	}
+
+	// Mark that content has changed since last snapshot
+	client.Room.MarkContentChanged()
 
 	if msg.Presence != nil {
 		client.UpdatePresence(msg.Presence.Cursor, msg.Presence.Selection)
@@ -317,4 +376,79 @@ func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, code, m
 	}
 	data, _ := json.Marshal(msg)
 	conn.Write(ctx, websocket.MessageText, data)
+}
+
+// handleSave handles a save/snapshot request from a client
+func (h *WSHandler) handleSave(client *Client, data []byte) {
+	var msg SaveMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		h.logger.Warn("invalid save message", "clientId", client.ID, "error", err)
+		return
+	}
+
+	// Create snapshot
+	snapshot := client.Room.CreateSnapshot(client.ID, SnapshotManual, msg.Message)
+
+	// Broadcast snapshot created to all clients
+	snapshotMsg := SnapshotCreatedMessage{
+		V:        1,
+		T:        "snapshot_created",
+		Snapshot: *snapshot,
+	}
+	snapshotData, _ := json.Marshal(snapshotMsg)
+	client.Room.Broadcast(snapshotData, "") // Send to all clients including sender
+}
+
+// handleRestore handles a restore request from a client (admin only)
+func (h *WSHandler) handleRestore(client *Client, data []byte) {
+	var msg RestoreMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		h.logger.Warn("invalid restore message", "clientId", client.ID, "error", err)
+		return
+	}
+
+	// Only owner can restore
+	if client.Room.OwnerID != client.ID {
+		client.Send(ErrorMessage{
+			V:       1,
+			T:       "error",
+			Code:    "unauthorized",
+			Message: "Only the room owner can restore snapshots",
+		})
+		return
+	}
+
+	snapshot, err := client.Room.RestoreToSnapshot(msg.SnapshotID)
+	if err != nil {
+		client.Send(ErrorMessage{
+			V:       1,
+			T:       "error",
+			Code:    "restore_failed",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Broadcast restore to all clients
+	restoreMsg := SnapshotRestoredMessage{
+		V:          1,
+		T:          "snapshot_restored",
+		Content:    snapshot.Content,
+		SnapshotID: msg.SnapshotID,
+		Version:    client.Room.GetVersion(),
+	}
+	restoreData, _ := json.Marshal(restoreMsg)
+	client.Room.Broadcast(restoreData, "") // Send to all clients
+}
+
+// handleGetSnapshots sends the list of snapshots to the requesting client
+func (h *WSHandler) handleGetSnapshots(client *Client) {
+	snapshots := client.Room.GetSnapshots()
+
+	msg := SnapshotsListMessage{
+		V:         1,
+		T:         "snapshots_list",
+		Snapshots: snapshots,
+	}
+	client.Send(msg)
 }
