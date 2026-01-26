@@ -15,5 +15,6 @@ export { LineRenderer } from "./LineRenderer";
 export { SelectionRenderer } from "./SelectionRenderer";
 export { ShareButton } from "./ShareButton";
 export { SharePopover } from "./SharePopover";
+export { ShareSidebar } from "./ShareSidebar";
 export { TabBar } from "./TabBar";
 export { WelcomeScreen } from "./WelcomeScreen";

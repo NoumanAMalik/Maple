@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, memo } from "react";
-import { CodeEditor } from "./CodeEditor";
+import { useState, useEffect, useCallback, useRef, memo, type Ref } from "react";
+import { CodeEditor, type CodeEditorHandle } from "./CodeEditor";
 import { FindReplace } from "./FindReplace";
 import TufteMarkdown from "@/components/markdown/TufteMarkdown";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useFindReplace } from "@/hooks/useFindReplace";
 import type { CursorPosition } from "@/types/editor";
 import type { Collaborator } from "@/hooks/useCollab";
+import type { Operation } from "@maple/protocol";
 
 interface EditorPaneProps {
     tabId: string;
@@ -16,6 +17,8 @@ interface EditorPaneProps {
     onCloseFindReplace?: () => void;
     onContentChange?: (content: string) => void;
     collaborators?: Collaborator[];
+    onOperations?: (ops: Operation[]) => void;
+    editorRef?: Ref<CodeEditorHandle>;
 }
 
 export const EditorPane = memo(function EditorPane({
@@ -25,6 +28,8 @@ export const EditorPane = memo(function EditorPane({
     onCloseFindReplace,
     onContentChange: onContentChangeCallback,
     collaborators = [],
+    onOperations,
+    editorRef,
 }: EditorPaneProps) {
     const { state, dispatch, getFileSystem, saveFile } = useWorkspace();
     const [content, setContent] = useState("");
@@ -173,6 +178,7 @@ export const EditorPane = memo(function EditorPane({
     return (
         <div className="relative h-full w-full">
             <CodeEditor
+                ref={editorRef}
                 initialContent={content}
                 onChange={handleContentChange}
                 onCursorChange={onCursorChange}
@@ -180,6 +186,7 @@ export const EditorPane = memo(function EditorPane({
                 searchMatches={findReplaceHook.matches}
                 currentMatchIndex={findReplaceHook.currentMatchIndex}
                 collaborators={collaborators}
+                onOperations={onOperations}
             />
             {onCloseFindReplace && (
                 <FindReplace

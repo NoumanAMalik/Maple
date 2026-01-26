@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CollabClient, type ConnectionStatus } from "@/lib/collab/client";
-import type { Actor, Position, Selection, CreateRoomResponse } from "@maple/protocol";
+import type { Actor, Position, Selection, CreateRoomResponse, Operation } from "@maple/protocol";
 
 export type { ConnectionStatus };
 
@@ -24,6 +24,21 @@ export interface Collaborator {
     selection?: Selection;
 }
 
+export interface ChangeEvent {
+    id: string;
+    actor: Actor;
+    summary: string;
+    timestamp: number;
+    isLocal: boolean;
+}
+
+export interface RemoteOpsEvent {
+    id: string;
+    ops: Operation[];
+    actor: Actor;
+    version: number;
+}
+
 export interface UseCollabResult {
     isSharing: boolean;
     shareUrl: string | null;
@@ -32,12 +47,44 @@ export interface UseCollabResult {
     roomId: string | null;
     isJoiner: boolean;
     displayName: string;
+    recentChanges: ChangeEvent[];
+    remoteOpsEvent: RemoteOpsEvent | null;
     startSharing: (content: string, language?: string) => Promise<void>;
     stopSharing: () => void;
     joinRoom: (roomId: string) => Promise<{ snapshot: string; version: number }>;
     leaveRoom: () => void;
     updatePresence: (cursor: Position, selection?: Selection) => void;
+    sendOperations: (ops: Operation[]) => void;
     setDisplayName: (name: string) => void;
+}
+
+const MAX_CHANGE_EVENTS = 20;
+
+function summarizeOps(ops: Operation[]): string {
+    let insertChars = 0;
+    let deleteChars = 0;
+
+    for (const op of ops) {
+        if (op.type === "insert") {
+            insertChars += op.text.length;
+        } else {
+            deleteChars += op.len;
+        }
+    }
+
+    const parts: string[] = [];
+    if (insertChars > 0) {
+        parts.push(`inserted ${insertChars} char${insertChars === 1 ? "" : "s"}`);
+    }
+    if (deleteChars > 0) {
+        parts.push(`deleted ${deleteChars} char${deleteChars === 1 ? "" : "s"}`);
+    }
+
+    if (parts.length === 0) {
+        return "made changes";
+    }
+
+    return parts.join(", ");
 }
 
 export function useCollab(): UseCollabResult {
@@ -48,9 +95,12 @@ export function useCollab(): UseCollabResult {
     const [roomId, setRoomId] = useState<string | null>(null);
     const [isJoiner, setIsJoiner] = useState(false);
     const [displayName, setDisplayNameState] = useState("You");
+    const [recentChanges, setRecentChanges] = useState<ChangeEvent[]>([]);
+    const [remoteOpsEvent, setRemoteOpsEvent] = useState<RemoteOpsEvent | null>(null);
 
     const clientRef = useRef<CollabClient | null>(null);
     const colorIndexRef = useRef(0);
+    const lastPresenceRef = useRef<{ cursor: Position; selection?: Selection } | null>(null);
     const pendingJoinRef = useRef<{
         resolve: (value: { snapshot: string; version: number }) => void;
         reject: (reason: Error) => void;
@@ -60,6 +110,18 @@ export function useCollab(): UseCollabResult {
         const color = COLLABORATOR_COLORS[colorIndexRef.current % COLLABORATOR_COLORS.length];
         colorIndexRef.current++;
         return color;
+    }, []);
+
+    const pushChangeEvent = useCallback((actor: Actor, ops: Operation[], isLocal: boolean) => {
+        const entry: ChangeEvent = {
+            id: `change_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            actor,
+            summary: summarizeOps(ops),
+            timestamp: Date.now(),
+            isLocal,
+        };
+
+        setRecentChanges((prev) => [entry, ...prev].slice(0, MAX_CHANGE_EVENTS));
     }, []);
 
     useEffect(() => {
@@ -138,6 +200,17 @@ export function useCollab(): UseCollabResult {
             });
         };
 
+        client.onRemoteOperations = (ops, actor, version) => {
+            if (ops.length === 0) return;
+            setRemoteOpsEvent({
+                id: `remote_${version}_${Date.now()}`,
+                ops,
+                actor,
+                version,
+            });
+            pushChangeEvent(actor, ops, false);
+        };
+
         client.onError = (error) => {
             console.error("[useCollab] Error:", error);
             if (pendingJoinRef.current) {
@@ -149,7 +222,7 @@ export function useCollab(): UseCollabResult {
         return () => {
             client.disconnect();
         };
-    }, [getNextColor]);
+    }, [getNextColor, pushChangeEvent]);
 
     const startSharing = useCallback(async (content: string, language?: string) => {
         const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL;
@@ -218,6 +291,8 @@ export function useCollab(): UseCollabResult {
         setRoomId(null);
         setIsJoiner(false);
         setCollaborators([]);
+        setRecentChanges([]);
+        setRemoteOpsEvent(null);
         colorIndexRef.current = 0;
     }, []);
 
@@ -239,16 +314,39 @@ export function useCollab(): UseCollabResult {
         setRoomId(null);
         setIsJoiner(false);
         setCollaborators([]);
+        setRecentChanges([]);
+        setRemoteOpsEvent(null);
         colorIndexRef.current = 0;
     }, [roomId]);
 
     const updatePresence = useCallback((cursor: Position, selection?: Selection) => {
+        lastPresenceRef.current = { cursor, selection };
         clientRef.current?.sendPresence(cursor, selection);
     }, []);
+
+    const sendOperations = useCallback(
+        (ops: Operation[]) => {
+            if (ops.length === 0) return;
+            clientRef.current?.sendOperations(ops);
+
+            const selfActor: Actor = {
+                clientId: clientRef.current?.getClientId() ?? "local",
+                displayName,
+                color: "var(--ui-accent)",
+            };
+            pushChangeEvent(selfActor, ops, true);
+        },
+        [displayName, pushChangeEvent],
+    );
 
     const setDisplayName = useCallback((name: string) => {
         setDisplayNameState(name);
         clientRef.current?.setDisplayName(name);
+
+        const lastPresence = lastPresenceRef.current;
+        if (lastPresence) {
+            clientRef.current?.sendPresence(lastPresence.cursor, lastPresence.selection);
+        }
     }, []);
 
     return {
@@ -259,11 +357,14 @@ export function useCollab(): UseCollabResult {
         roomId,
         isJoiner,
         displayName,
+        recentChanges,
+        remoteOpsEvent,
         startSharing,
         stopSharing,
         joinRoom,
         leaveRoom,
         updatePresence,
+        sendOperations,
         setDisplayName,
     };
 }
