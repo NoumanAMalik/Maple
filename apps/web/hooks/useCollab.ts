@@ -30,6 +30,12 @@ export interface ChangeEvent {
     summary: string;
     timestamp: number;
     isLocal: boolean;
+    /** Number of characters inserted */
+    insertions: number;
+    /** Number of characters deleted */
+    deletions: number;
+    /** Number of operations batched into this event */
+    batchCount: number;
 }
 
 export interface RemoteOpsEvent {
@@ -59,32 +65,43 @@ export interface UseCollabResult {
 }
 
 const MAX_CHANGE_EVENTS = 20;
+/** Time window in ms to batch changes from same user */
+const BATCH_WINDOW_MS = 2000;
 
-function summarizeOps(ops: Operation[]): string {
-    let insertChars = 0;
-    let deleteChars = 0;
+interface OpStats {
+    insertions: number;
+    deletions: number;
+}
+
+function getOpStats(ops: Operation[]): OpStats {
+    let insertions = 0;
+    let deletions = 0;
 
     for (const op of ops) {
         if (op.type === "insert") {
-            insertChars += op.text.length;
+            insertions += op.text.length;
         } else {
-            deleteChars += op.len;
+            deletions += op.len;
         }
     }
 
-    const parts: string[] = [];
-    if (insertChars > 0) {
-        parts.push(`inserted ${insertChars} char${insertChars === 1 ? "" : "s"}`);
-    }
-    if (deleteChars > 0) {
-        parts.push(`deleted ${deleteChars} char${deleteChars === 1 ? "" : "s"}`);
-    }
+    return { insertions, deletions };
+}
 
-    if (parts.length === 0) {
+function formatDiffSummary(insertions: number, deletions: number): string {
+    if (insertions === 0 && deletions === 0) {
         return "made changes";
     }
 
-    return parts.join(", ");
+    const parts: string[] = [];
+    if (insertions > 0) {
+        parts.push(`+${insertions}`);
+    }
+    if (deletions > 0) {
+        parts.push(`-${deletions}`);
+    }
+
+    return parts.join(" ");
 }
 
 export function useCollab(): UseCollabResult {
@@ -113,15 +130,52 @@ export function useCollab(): UseCollabResult {
     }, []);
 
     const pushChangeEvent = useCallback((actor: Actor, ops: Operation[], isLocal: boolean) => {
-        const entry: ChangeEvent = {
-            id: `change_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            actor,
-            summary: summarizeOps(ops),
-            timestamp: Date.now(),
-            isLocal,
-        };
+        const stats = getOpStats(ops);
+        const now = Date.now();
 
-        setRecentChanges((prev) => [entry, ...prev].slice(0, MAX_CHANGE_EVENTS));
+        setRecentChanges((prev) => {
+            // Check if we can batch with a recent change from the same user
+            const recentIndex = prev.findIndex(
+                (change) => change.actor.clientId === actor.clientId && now - change.timestamp < BATCH_WINDOW_MS,
+            );
+
+            if (recentIndex !== -1) {
+                // Merge with existing change
+                const existing = prev[recentIndex];
+                const newInsertions = existing.insertions + stats.insertions;
+                const newDeletions = existing.deletions + stats.deletions;
+
+                const updated: ChangeEvent = {
+                    ...existing,
+                    summary: formatDiffSummary(newInsertions, newDeletions),
+                    timestamp: now, // Update timestamp to latest
+                    insertions: newInsertions,
+                    deletions: newDeletions,
+                    batchCount: existing.batchCount + 1,
+                    // Update actor info in case display name changed
+                    actor: { ...actor },
+                };
+
+                // Move to top of list
+                const newList = [...prev];
+                newList.splice(recentIndex, 1);
+                return [updated, ...newList].slice(0, MAX_CHANGE_EVENTS);
+            }
+
+            // Create new entry
+            const entry: ChangeEvent = {
+                id: `change_${now}_${Math.random().toString(36).substring(2, 7)}`,
+                actor,
+                summary: formatDiffSummary(stats.insertions, stats.deletions),
+                timestamp: now,
+                isLocal,
+                insertions: stats.insertions,
+                deletions: stats.deletions,
+                batchCount: 1,
+            };
+
+            return [entry, ...prev].slice(0, MAX_CHANGE_EVENTS);
+        });
     }, []);
 
     useEffect(() => {
