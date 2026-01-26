@@ -2,6 +2,20 @@ import type { Actor, Operation, Position, Presence, Selection } from "./operatio
 
 export const PROTOCOL_VERSION = 1;
 
+// Snapshot types
+export type SnapshotType = "initial" | "manual" | "auto" | "pre-close";
+
+export interface Snapshot {
+    id: string;
+    timestamp: string; // ISO 8601 format
+    createdBy: string;
+    type: SnapshotType;
+    message?: string;
+    linesAdded: number;
+    linesRemoved: number;
+    content?: string; // Only included when explicitly requested
+}
+
 export interface HelloMessage {
     v: 1;
     t: "hello";
@@ -27,7 +41,32 @@ export interface PresenceMessage {
     displayName?: string;
 }
 
-export type ClientMessage = HelloMessage | OpMessage | PresenceMessage;
+// Snapshot client messages
+export interface SaveMessage {
+    v: 1;
+    t: "save";
+    content: string;
+    message?: string;
+}
+
+export interface RestoreMessage {
+    v: 1;
+    t: "restore";
+    snapshotId: string;
+}
+
+export interface GetSnapshotsMessage {
+    v: 1;
+    t: "get_snapshots";
+}
+
+export type ClientMessage =
+    | HelloMessage
+    | OpMessage
+    | PresenceMessage
+    | SaveMessage
+    | RestoreMessage
+    | GetSnapshotsMessage;
 
 export interface WelcomeMessage {
     v: 1;
@@ -36,6 +75,8 @@ export interface WelcomeMessage {
     serverVersion: number;
     snapshot: string;
     presence: Array<{ actor: Actor; presence: Presence }>;
+    snapshots: Snapshot[];
+    isOwner: boolean;
 }
 
 export interface AckMessage {
@@ -85,6 +126,27 @@ export interface UserLeftMessage {
     clientId: string;
 }
 
+// Snapshot server messages
+export interface SnapshotCreatedMessage {
+    v: 1;
+    t: "snapshot_created";
+    snapshot: Snapshot;
+}
+
+export interface SnapshotsListMessage {
+    v: 1;
+    t: "snapshots_list";
+    snapshots: Snapshot[];
+}
+
+export interface SnapshotRestoredMessage {
+    v: 1;
+    t: "snapshot_restored";
+    content: string;
+    snapshotId: string;
+    version: number;
+}
+
 export type ServerMessage =
     | WelcomeMessage
     | AckMessage
@@ -93,4 +155,7 @@ export type ServerMessage =
     | ErrorMessage
     | ResyncRequiredMessage
     | UserJoinedMessage
-    | UserLeftMessage;
+    | UserLeftMessage
+    | SnapshotCreatedMessage
+    | SnapshotsListMessage
+    | SnapshotRestoredMessage;

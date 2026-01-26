@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"log/slog"
 	"sync"
 	"time"
@@ -16,6 +17,8 @@ type RoomRegistry struct {
 	cancel context.CancelFunc
 }
 
+const autoSaveInterval = 30 * time.Second
+
 func NewRoomRegistry(ctx context.Context, logger *slog.Logger) *RoomRegistry {
 	ctx, cancel := context.WithCancel(ctx)
 	rr := &RoomRegistry{
@@ -24,6 +27,7 @@ func NewRoomRegistry(ctx context.Context, logger *slog.Logger) *RoomRegistry {
 		cancel: cancel,
 	}
 	go rr.cleanupLoop()
+	go rr.autoSaveLoop()
 	return rr
 }
 
@@ -57,6 +61,53 @@ func (rr *RoomRegistry) cleanupStaleRooms() {
 		}
 		return true
 	})
+}
+
+func (rr *RoomRegistry) autoSaveLoop() {
+	ticker := time.NewTicker(10 * time.Second) // Check more frequently than auto-save interval
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-rr.ctx.Done():
+			return
+		case <-ticker.C:
+			rr.checkAutoSave()
+		}
+	}
+}
+
+func (rr *RoomRegistry) checkAutoSave() {
+	rr.rooms.Range(func(key, value any) bool {
+		room := value.(*Room)
+		// Only auto-save if there are changes and enough time has passed
+		if room.ClientCount() > 0 && room.ShouldAutoSave(autoSaveInterval) {
+			snapshot := room.CreateSnapshot("auto-save", SnapshotAuto, "")
+			rr.logger.Info("auto-save triggered", "roomId", room.ID, "snapshotId", snapshot.ID)
+
+			// Broadcast to all clients
+			broadcastAutoSave(room, snapshot)
+		}
+		return true
+	})
+}
+
+func broadcastAutoSave(room *Room, snapshot *Snapshot) {
+	msg := struct {
+		V        int      `json:"v"`
+		T        string   `json:"t"`
+		Snapshot Snapshot `json:"snapshot"`
+	}{
+		V:        1,
+		T:        "snapshot_created",
+		Snapshot: *snapshot,
+	}
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	room.Broadcast(data, "")
 }
 
 func (rr *RoomRegistry) CreateRoom(content, language, ownerID string) *Room {

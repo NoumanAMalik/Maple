@@ -88,14 +88,32 @@ function EditorContent() {
         [collab],
     );
 
+    // Get active tab content for find/replace
+    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
+    const [activeContent, setActiveContent] = useState("");
+
     useEffect(() => {
         if (!collab.remoteOpsEvent) return;
         editorRef.current?.applyRemoteOperations(collab.remoteOpsEvent.ops);
     }, [collab.remoteOpsEvent]);
 
-    // Get active tab content for find/replace
-    const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
-    const [activeContent, setActiveContent] = useState("");
+    // Handle snapshot restoration
+    useEffect(() => {
+        collab.setOnSnapshotRestored((content, _snapshotId, _version) => {
+            // Update the editor content with the restored snapshot
+            if (activeTab) {
+                dispatch({
+                    type: "UPDATE_TAB_CONTENT",
+                    payload: { tabId: activeTab.id, content },
+                });
+                setActiveContent(content);
+            }
+        });
+
+        return () => {
+            collab.setOnSnapshotRestored(null);
+        };
+    }, [collab, activeTab, dispatch]);
 
     const persistSharedContent = useCallback(async () => {
         if (!activeTab) return;
@@ -430,15 +448,19 @@ function EditorContent() {
                                 onClose={closeShareSidebar}
                                 isSharing={collab.isSharing}
                                 isJoiner={collab.isJoiner}
+                                isOwner={collab.isOwner}
                                 shareUrl={collab.shareUrl}
                                 collaborators={collab.collaborators}
                                 connectionStatus={collab.connectionStatus}
                                 displayName={collab.displayName}
                                 recentChanges={collab.recentChanges}
+                                snapshots={collab.snapshots}
                                 onStartSharing={handleStartSharing}
                                 onStopSharing={handleStopSharing}
                                 onLeaveRoom={handleLeaveRoom}
                                 onDisplayNameChange={collab.setDisplayName}
+                                onSaveSnapshot={(message) => collab.saveSnapshot(activeContent, message)}
+                                onRestoreSnapshot={collab.restoreSnapshot}
                             />
                         )}
                     </div>
