@@ -3,6 +3,7 @@ package collab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -66,10 +67,11 @@ type ErrorMessage struct {
 }
 
 type PresenceMessage struct {
-	V         int        `json:"v"`
-	T         string     `json:"t"`
-	Cursor    Position   `json:"cursor"`
-	Selection *Selection `json:"selection,omitempty"`
+	V           int        `json:"v"`
+	T           string     `json:"t"`
+	Cursor      Position   `json:"cursor"`
+	Selection   *Selection `json:"selection,omitempty"`
+	DisplayName string     `json:"displayName,omitempty"`
 }
 
 type PresenceUpdateMessage struct {
@@ -220,8 +222,56 @@ func (h *WSHandler) readLoop(client *Client) {
 }
 
 func (h *WSHandler) handleOp(client *Client, data []byte) {
-	// TODO: Implement OT in Phase 2
-	h.logger.Debug("received op message", "clientId", client.ID)
+	var msg OpMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		h.logger.Warn("invalid op message", "clientId", client.ID, "error", err)
+		return
+	}
+
+	if msg.OpID == "" || len(msg.Ops) == 0 {
+		h.logger.Warn("invalid op payload", "clientId", client.ID)
+		return
+	}
+
+	transformed, newVersion, err := client.Room.ApplyOpBatch(client.ID, msg.OpID, msg.BaseVersion, msg.Ops)
+	if err != nil {
+		if errors.Is(err, ErrResyncRequired) {
+			client.Send(ResyncRequiredMessage{V: 1, T: "resync_required"})
+			return
+		}
+		h.logger.Warn("failed to apply ops", "clientId", client.ID, "error", err)
+		return
+	}
+
+	if msg.Presence != nil {
+		client.UpdatePresence(msg.Presence.Cursor, msg.Presence.Selection)
+		h.broadcastPresenceUpdate(client, msg.Presence.Cursor, msg.Presence.Selection)
+	}
+
+	client.Send(AckMessage{
+		V:          1,
+		T:          "ack",
+		OpID:       msg.OpID,
+		NewVersion: newVersion,
+	})
+
+	if len(transformed) == 0 {
+		return
+	}
+
+	remote := RemoteOpMessage{
+		V:       1,
+		T:       "remote_op",
+		Version: newVersion,
+		Actor: ActorInfo{
+			ClientID:    client.ID,
+			DisplayName: client.DisplayName,
+			Color:       client.Color,
+		},
+		Ops: transformed,
+	}
+	remoteData, _ := json.Marshal(remote)
+	client.Room.Broadcast(remoteData, client.ID)
 }
 
 func (h *WSHandler) handlePresence(client *Client, data []byte) {
@@ -231,8 +281,18 @@ func (h *WSHandler) handlePresence(client *Client, data []byte) {
 		return
 	}
 
-	client.UpdatePresence(&msg.Cursor, msg.Selection)
+	if msg.DisplayName != "" {
+		client.UpdateDisplayName(msg.DisplayName)
+	}
 
+	client.UpdatePresence(&msg.Cursor, msg.Selection)
+	h.broadcastPresenceUpdate(client, &msg.Cursor, msg.Selection)
+}
+
+func (h *WSHandler) broadcastPresenceUpdate(client *Client, cursor *Position, selection *Selection) {
+	if cursor == nil {
+		return
+	}
 	update := PresenceUpdateMessage{
 		V: 1,
 		T: "presence_update",
@@ -241,8 +301,8 @@ func (h *WSHandler) handlePresence(client *Client, data []byte) {
 			DisplayName: client.DisplayName,
 			Color:       client.Color,
 		},
-		Cursor:    msg.Cursor,
-		Selection: msg.Selection,
+		Cursor:    *cursor,
+		Selection: selection,
 	}
 	updateData, _ := json.Marshal(update)
 	client.Room.Broadcast(updateData, client.ID)
