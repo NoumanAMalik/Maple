@@ -192,7 +192,10 @@ export const ShareSidebar = memo(function ShareSidebar({
                                         key={collab.clientId}
                                         className="flex items-center gap-2 rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2 py-1"
                                     >
-                                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: collab.color }} />
+                                        <span
+                                            className="h-2 w-2 rounded-full"
+                                            style={{ backgroundColor: collab.color }}
+                                        />
                                         <span className="text-xs text-[var(--editor-fg)]">{collab.displayName}</span>
                                     </div>
                                 ))}
@@ -202,9 +205,7 @@ export const ShareSidebar = memo(function ShareSidebar({
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-[var(--editor-line-number)]">Recent changes</span>
-                                <span className="text-xs text-[var(--editor-line-number)]">
-                                    {recentChanges.length}
-                                </span>
+                                <span className="text-xs text-[var(--editor-line-number)]">{recentChanges.length}</span>
                             </div>
                             {recentChanges.length === 0 ? (
                                 <div className="rounded border border-dashed border-[var(--ui-border)] px-2 py-3 text-xs text-[var(--editor-line-number)]">
@@ -219,20 +220,34 @@ export const ShareSidebar = memo(function ShareSidebar({
                                         >
                                             <div className="flex items-start gap-2">
                                                 <span
-                                                    className="mt-1 h-2 w-2 rounded-full"
+                                                    className="mt-1 h-2 w-2 shrink-0 rounded-full"
                                                     style={{ backgroundColor: change.actor.color }}
                                                 />
-                                                <div>
+                                                <div className="min-w-0">
                                                     <div className="text-xs text-[var(--editor-fg)]">
                                                         {change.actor.displayName ?? "Anonymous"}
                                                         {change.isLocal ? " (you)" : ""}
                                                     </div>
-                                                    <div className="text-[11px] text-[var(--editor-line-number)]">
-                                                        {change.summary}
+                                                    <div className="mt-0.5 flex items-center gap-1.5">
+                                                        {change.insertions > 0 && (
+                                                            <span className="font-mono text-[11px] text-[var(--level-success)]">
+                                                                +{change.insertions}
+                                                            </span>
+                                                        )}
+                                                        {change.deletions > 0 && (
+                                                            <span className="font-mono text-[11px] text-[var(--level-danger)]">
+                                                                -{change.deletions}
+                                                            </span>
+                                                        )}
+                                                        {change.insertions === 0 && change.deletions === 0 && (
+                                                            <span className="text-[11px] text-[var(--editor-line-number)]">
+                                                                made changes
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className="whitespace-nowrap text-[11px] text-[var(--editor-line-number)]">
+                                            <span className="shrink-0 whitespace-nowrap text-[11px] text-[var(--editor-line-number)]">
                                                 {formatTimeAgo(change.timestamp)}
                                             </span>
                                         </div>
