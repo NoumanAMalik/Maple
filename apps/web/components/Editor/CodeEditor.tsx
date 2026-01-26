@@ -1,6 +1,15 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo, useEffect, type MouseEvent } from "react";
+import {
+    useRef,
+    useState,
+    useCallback,
+    useMemo,
+    useEffect,
+    useImperativeHandle,
+    forwardRef,
+    type MouseEvent,
+} from "react";
 import { useEditorState } from "@/hooks/useEditorState";
 import { useViewport } from "@/hooks/useViewport";
 import { useDocumentHighlighting } from "@/hooks/useDocumentHighlighting";
@@ -14,6 +23,11 @@ import { createCoordinateConverter, pixelToPosition } from "@/lib/editor/coordin
 import type { EditorConfig, CursorPosition } from "@/types/editor";
 import type { SearchMatch } from "@/lib/search/findInDocument";
 import type { Collaborator } from "@/hooks/useCollab";
+import type { Operation } from "@maple/protocol";
+
+export interface CodeEditorHandle {
+    applyRemoteOperations: (ops: Operation[]) => void;
+}
 
 interface CodeEditorProps {
     /** Initial content to display */
@@ -32,6 +46,8 @@ interface CodeEditorProps {
     currentMatchIndex?: number;
     /** Remote collaborator cursors */
     collaborators?: Collaborator[];
+    /** Local edit operations */
+    onOperations?: (ops: Operation[]) => void;
 }
 
 /**
@@ -39,7 +55,7 @@ interface CodeEditorProps {
  * Provides a full-featured text editing experience with virtual scrolling,
  * cursor, selection, and keyboard handling.
  */
-export function CodeEditor({
+export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEditor({
     initialContent = "",
     onChange,
     onCursorChange,
@@ -48,7 +64,8 @@ export function CodeEditor({
     searchMatches,
     currentMatchIndex,
     collaborators = [],
-}: CodeEditorProps) {
+    onOperations,
+}: CodeEditorProps, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const prevCursorRef = useRef<{ line: number; column: number } | null>(null);
@@ -60,7 +77,16 @@ export function CodeEditor({
         initialContent,
         config: configOverrides,
         onChange,
+        onOperations,
     });
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            applyRemoteOperations: editor.applyRemoteOperations,
+        }),
+        [editor.applyRemoteOperations],
+    );
 
     // Viewport for virtual scrolling
     const { viewState, setScroll, scrollToPosition } = useViewport({
@@ -349,4 +375,4 @@ export function CodeEditor({
             </div>
         </div>
     );
-}
+});

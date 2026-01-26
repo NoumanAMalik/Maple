@@ -3,6 +3,7 @@ package collab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -31,10 +32,13 @@ type Room struct {
 	CreatedAt time.Time
 	OwnerID   string
 
-	clients sync.Map // map[string]*Client
-	mu      sync.RWMutex
-	logger  *slog.Logger
+	clients   sync.Map // map[string]*Client
+	mu        sync.RWMutex
+	logger    *slog.Logger
+	opHistory []OpHistoryEntry
 }
+
+const opHistoryLimit = 256
 
 func NewRoom(id, content, language, ownerID string, logger *slog.Logger) *Room {
 	return &Room{
@@ -45,6 +49,7 @@ func NewRoom(id, content, language, ownerID string, logger *slog.Logger) *Room {
 		CreatedAt: time.Now(),
 		OwnerID:   ownerID,
 		logger:    logger,
+		opHistory: make([]OpHistoryEntry, 0, opHistoryLimit),
 	}
 }
 
@@ -100,6 +105,68 @@ func (r *Room) GetVersion() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.Version
+}
+
+func (r *Room) ApplyOpBatch(clientID, opID string, baseVersion int, ops []Operation) ([]Operation, int, error) {
+	if len(ops) == 0 {
+		return nil, r.GetVersion(), errors.New("empty operation batch")
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if baseVersion > r.Version {
+		return nil, r.Version, ErrResyncRequired
+	}
+
+	historyStartVersion := r.Version - len(r.opHistory)
+	if baseVersion < historyStartVersion {
+		return nil, r.Version, ErrResyncRequired
+	}
+
+	transformed := make([]Operation, 0, len(ops))
+	for _, op := range ops {
+		transformed = append(transformed, op)
+	}
+
+	for _, entry := range r.opHistory {
+		if entry.Version <= baseVersion {
+			continue
+		}
+		for i, incoming := range transformed {
+			for _, historyOp := range entry.Ops {
+				incoming = transformOperation(incoming, historyOp, clientID, entry.ClientID)
+			}
+			transformed[i] = incoming
+		}
+	}
+
+	filtered := make([]Operation, 0, len(transformed))
+	for _, op := range transformed {
+		if !isNoop(op) {
+			filtered = append(filtered, op)
+		}
+	}
+
+	updated, err := applyOperations(r.Content, filtered)
+	if err != nil {
+		return nil, r.Version, err
+	}
+
+	r.Version++
+	r.Content = updated
+	r.opHistory = append(r.opHistory, OpHistoryEntry{
+		Version:  r.Version,
+		Ops:      filtered,
+		ClientID: clientID,
+		OpID:     opID,
+	})
+
+	if len(r.opHistory) > opHistoryLimit {
+		r.opHistory = r.opHistory[len(r.opHistory)-opHistoryLimit:]
+	}
+
+	return filtered, r.Version, nil
 }
 
 type PresenceInfo struct {
@@ -161,6 +228,12 @@ func (c *Client) UpdatePresence(cursor *Position, selection *Selection) {
 		Cursor:    cursor,
 		Selection: selection,
 	}
+}
+
+func (c *Client) UpdateDisplayName(name string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.DisplayName = name
 }
 
 func (c *Client) GetPresence() *Presence {

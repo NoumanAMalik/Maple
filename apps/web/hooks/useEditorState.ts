@@ -12,11 +12,13 @@ import {
     normalizeSelection,
     isSelectionEmpty,
 } from "@/types/editor";
+import type { Operation } from "@maple/protocol";
 
 interface UseEditorStateOptions {
     initialContent?: string;
     config?: Partial<EditorConfig>;
     onChange?: (content: string) => void;
+    onOperations?: (ops: Operation[]) => void;
 }
 
 interface HistoryEntry {
@@ -48,6 +50,7 @@ export interface EditorStateAPI {
 
     // Commands
     executeCommand: (command: EditorCommand) => void;
+    applyRemoteOperations: (ops: Operation[]) => void;
 
     // Direct setters (for mouse handling)
     setCursor: (position: CursorPosition) => void;
@@ -66,7 +69,7 @@ const MAX_HISTORY_SIZE = 1000;
  * Handles document content, cursor, selection, and undo/redo.
  */
 export function useEditorState(options: UseEditorStateOptions = {}): EditorStateAPI {
-    const { initialContent = "", config: userConfig, onChange } = options;
+    const { initialContent = "", config: userConfig, onChange, onOperations } = options;
 
     const config = useMemo(() => ({ ...defaultEditorConfig, ...userConfig }), [userConfig]);
 
@@ -93,6 +96,45 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     const triggerUpdate = useCallback(() => {
         setVersion((v) => v + 1);
     }, []);
+
+    const diffToOperations = useCallback((prev: string, next: string): Operation[] => {
+        if (prev === next) return [];
+
+        let prefix = 0;
+        const minLen = Math.min(prev.length, next.length);
+        while (prefix < minLen && prev[prefix] === next[prefix]) {
+            prefix++;
+        }
+
+        let prevEnd = prev.length - 1;
+        let nextEnd = next.length - 1;
+        while (prevEnd >= prefix && nextEnd >= prefix && prev[prevEnd] === next[nextEnd]) {
+            prevEnd--;
+            nextEnd--;
+        }
+
+        const deleted = prev.slice(prefix, prevEnd + 1);
+        const inserted = next.slice(prefix, nextEnd + 1);
+
+        const ops: Operation[] = [];
+        if (deleted.length > 0) {
+            ops.push({ type: "delete", pos: prefix, len: deleted.length });
+        }
+        if (inserted.length > 0) {
+            ops.push({ type: "insert", pos: prefix, text: inserted });
+        }
+
+        return ops;
+    }, []);
+
+    const emitOperations = useCallback(
+        (ops: Operation[]) => {
+            if (ops.length > 0) {
+                onOperations?.(ops);
+            }
+        },
+        [onOperations],
+    );
 
     // Track previous initialContent to detect changes
     const prevInitialContentRef = useRef(initialContent);
@@ -164,6 +206,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     const insertText = useCallback(
         (text: string) => {
             const buffer = bufferRef.current;
+            const ops: Operation[] = [];
 
             // Determine changedFromLine before any edits
             const changedFromLine =
@@ -174,6 +217,9 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                 const normalized = normalizeSelection(selection);
                 const startOffset = buffer.positionToOffset(normalized.start);
                 const endOffset = buffer.positionToOffset(normalized.end);
+                if (endOffset > startOffset) {
+                    ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
+                }
                 buffer.delete(startOffset, endOffset - startOffset);
                 setCursorState(normalized.start);
                 setSelectionState(null);
@@ -182,6 +228,9 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             // Insert text
             const offset = buffer.positionToOffset(cursor);
             buffer.insert(offset, text);
+            if (text.length > 0) {
+                ops.push({ type: "insert", pos: offset, text });
+            }
 
             // Move cursor after inserted text
             const newOffset = offset + text.length;
@@ -193,14 +242,16 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             editMetadataRef.current = { changedFromLine, version: version + 1 };
 
             onChange?.(buffer.getText());
+            emitOperations(ops);
             triggerUpdate();
         },
-        [cursor, selection, onChange, triggerUpdate, version],
+        [cursor, selection, onChange, emitOperations, triggerUpdate, version],
     );
 
     // Delete backward (backspace)
     const deleteBackward = useCallback(() => {
         const buffer = bufferRef.current;
+        const ops: Operation[] = [];
 
         // Determine changedFromLine before any edits
         const changedFromLine =
@@ -211,6 +262,9 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             const normalized = normalizeSelection(selection);
             const startOffset = buffer.positionToOffset(normalized.start);
             const endOffset = buffer.positionToOffset(normalized.end);
+            if (endOffset > startOffset) {
+                ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
+            }
             buffer.delete(startOffset, endOffset - startOffset);
             setCursorState(normalized.start);
             setSelectionState(null);
@@ -219,6 +273,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             const offset = buffer.positionToOffset(cursor);
             if (offset > 0) {
                 buffer.delete(offset - 1, 1);
+                ops.push({ type: "delete", pos: offset - 1, len: 1 });
                 const newCursor = buffer.offsetToPosition(offset - 1);
                 setCursorState(newCursor);
             }
@@ -230,12 +285,14 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         editMetadataRef.current = { changedFromLine, version: version + 1 };
 
         onChange?.(buffer.getText());
+        emitOperations(ops);
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate, version]);
+    }, [cursor, selection, onChange, emitOperations, triggerUpdate, version]);
 
     // Delete forward (delete key)
     const deleteForward = useCallback(() => {
         const buffer = bufferRef.current;
+        const ops: Operation[] = [];
 
         // Determine changedFromLine before any edits
         const changedFromLine =
@@ -246,6 +303,9 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             const normalized = normalizeSelection(selection);
             const startOffset = buffer.positionToOffset(normalized.start);
             const endOffset = buffer.positionToOffset(normalized.end);
+            if (endOffset > startOffset) {
+                ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
+            }
             buffer.delete(startOffset, endOffset - startOffset);
             setCursorState(normalized.start);
             setSelectionState(null);
@@ -254,6 +314,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             const offset = buffer.positionToOffset(cursor);
             if (offset < buffer.getTotalLength()) {
                 buffer.delete(offset, 1);
+                ops.push({ type: "delete", pos: offset, len: 1 });
             }
         }
 
@@ -263,8 +324,82 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         editMetadataRef.current = { changedFromLine, version: version + 1 };
 
         onChange?.(buffer.getText());
+        emitOperations(ops);
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate, version]);
+    }, [cursor, selection, onChange, emitOperations, triggerUpdate, version]);
+
+    const applyRemoteOperations = useCallback(
+        (ops: Operation[]) => {
+            if (ops.length === 0) return;
+
+            const buffer = bufferRef.current;
+            let cursorOffset = buffer.positionToOffset(cursor);
+            let selectionAnchorOffset: number | null = null;
+            let selectionActiveOffset: number | null = null;
+
+            if (selection && !isSelectionEmpty(selection)) {
+                selectionAnchorOffset = buffer.positionToOffset(selection.anchor);
+                selectionActiveOffset = buffer.positionToOffset(selection.active);
+            }
+
+            let changedFromLine = Number.MAX_SAFE_INTEGER;
+
+            const adjustOffset = (offset: number, op: Operation): number => {
+                if (op.type === "insert") {
+                    const insertLen = op.text.length;
+                    if (op.pos <= offset) {
+                        return offset + insertLen;
+                    }
+                    return offset;
+                }
+
+                const deleteEnd = op.pos + op.len;
+                if (op.pos >= offset) {
+                    return offset;
+                }
+                if (deleteEnd <= offset) {
+                    return offset - op.len;
+                }
+                return op.pos;
+            };
+
+            for (const op of ops) {
+                const line = buffer.offsetToPosition(op.pos).line;
+                changedFromLine = Math.min(changedFromLine, line);
+
+                cursorOffset = adjustOffset(cursorOffset, op);
+                if (selectionAnchorOffset !== null && selectionActiveOffset !== null) {
+                    selectionAnchorOffset = adjustOffset(selectionAnchorOffset, op);
+                    selectionActiveOffset = adjustOffset(selectionActiveOffset, op);
+                }
+
+                if (op.type === "insert") {
+                    buffer.insert(op.pos, op.text);
+                } else {
+                    buffer.delete(op.pos, op.len);
+                }
+            }
+
+            const newCursor = buffer.offsetToPosition(cursorOffset);
+            setCursorState(newCursor);
+
+            if (selectionAnchorOffset !== null && selectionActiveOffset !== null) {
+                const anchor = buffer.offsetToPosition(selectionAnchorOffset);
+                const active = buffer.offsetToPosition(selectionActiveOffset);
+                setSelectionState({ anchor, active });
+            }
+
+            setIsDirty(true);
+            editMetadataRef.current = {
+                changedFromLine: changedFromLine === Number.MAX_SAFE_INTEGER ? 1 : changedFromLine,
+                version: version + 1,
+            };
+
+            onChange?.(buffer.getText());
+            triggerUpdate();
+        },
+        [cursor, selection, onChange, triggerUpdate, version],
+    );
 
     // Move cursor in a direction
     const moveCursor = useCallback(
@@ -442,6 +577,8 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     const undo = useCallback(() => {
         if (undoStackRef.current.length === 0) return;
 
+        const prevContent = bufferRef.current.getText();
+
         // Save current state to redo stack
         redoStackRef.current.push({
             snapshot: bufferRef.current.snapshot(),
@@ -460,13 +597,17 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         // Full re-tokenization needed after undo
         editMetadataRef.current = { changedFromLine: 1, version: version + 1 };
 
-        onChange?.(bufferRef.current.getText());
+        const nextContent = bufferRef.current.getText();
+        onChange?.(nextContent);
+        emitOperations(diffToOperations(prevContent, nextContent));
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate, version]);
+    }, [cursor, selection, onChange, emitOperations, diffToOperations, triggerUpdate, version]);
 
     // Redo
     const redo = useCallback(() => {
         if (redoStackRef.current.length === 0) return;
+
+        const prevContent = bufferRef.current.getText();
 
         // Save current state to undo stack
         undoStackRef.current.push({
@@ -486,9 +627,11 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         // Full re-tokenization needed after redo
         editMetadataRef.current = { changedFromLine: 1, version: version + 1 };
 
-        onChange?.(bufferRef.current.getText());
+        const nextContent = bufferRef.current.getText();
+        onChange?.(nextContent);
+        emitOperations(diffToOperations(prevContent, nextContent));
         triggerUpdate();
-    }, [cursor, selection, onChange, triggerUpdate, version]);
+    }, [cursor, selection, onChange, emitOperations, diffToOperations, triggerUpdate, version]);
 
     // Execute a command
     const executeCommand = useCallback(
@@ -610,6 +753,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             getSelectedText,
 
             executeCommand,
+            applyRemoteOperations,
             setCursor,
             setSelection,
             getEditMetadata: () => editMetadataRef.current,
@@ -617,6 +761,17 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                 editMetadataRef.current = null;
             },
         }),
-        [cursor, selection, isDirty, version, config, getSelectedText, executeCommand, setCursor, setSelection],
+        [
+            cursor,
+            selection,
+            isDirty,
+            version,
+            config,
+            getSelectedText,
+            executeCommand,
+            applyRemoteOperations,
+            setCursor,
+            setSelection,
+        ],
     );
 }
