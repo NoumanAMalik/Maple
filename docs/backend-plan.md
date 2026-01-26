@@ -15,6 +15,7 @@ A comprehensive plan for adding a Go WebSocket backend to Maple, enabling real-t
 7. [Features Enabled](#7-features-enabled)
 8. [Implementation Phases](#8-implementation-phases)
 9. [Risks & Guardrails](#9-risks--guardrails)
+10. [Future Enhancements](#10-future-enhancements)
 
 ---
 
@@ -1131,6 +1132,85 @@ interface OutboxOp {
 1. **Review this plan** - Identify any gaps or concerns
 2. **Start Phase 0** - Set up monorepo structure
 3. **Iterate** - Each phase builds on the previous
+
+---
+
+## 10. Future Enhancements
+
+### Live Diff Viewer for Multiplayer Sessions
+
+A visual diff viewer integrated into the collaboration UI would allow users to see a detailed breakdown of changes during live editing sessions.
+
+#### Goals
+
+- **Git-like diff visualization**: Show line-by-line diffs with green (+) for additions and red (-) for deletions
+- **Session history replay**: Ability to replay the editing session as a timeline
+- **Per-user diff summaries**: Collapsible sections showing each collaborator's contributions
+- **Code review mode**: Highlight specific changes for discussion during pair programming
+
+#### Proposed Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Diff Viewer Panel                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Session Timeline                                                    │
+│  ├────●────●─────●───●──────●────────●────> now                     │
+│       │    │     │   │      │        │                              │
+│       v    v     v   v      v        v                              │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  Nouman Test                            +127 -45   2m ago    │   │
+│  │  ────────────────────────────────────────────────────────────│   │
+│  │  - const oldVar = "value";                                   │   │
+│  │  + const newVar = "updated";                                 │   │
+│  │  + // Added comment explaining the change                    │   │
+│  │                                                              │   │
+│  │  [Show more...]                                              │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │  Anonymous                               +23 -8    5m ago    │   │
+│  │  ────────────────────────────────────────────────────────────│   │
+│  │  [Expand to see changes...]                                  │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation Notes
+
+1. **Operation accumulation**: The server already stores operations in `opHistory`. This can be extended to generate diff snapshots at regular intervals.
+
+2. **Diff algorithm**: Use a custom line-based diff algorithm (similar to Myers diff) to compute additions/deletions between snapshots.
+
+3. **Syntax highlighting in diffs**: Apply the existing tokenizer to diff content for consistent highlighting.
+
+4. **Performance considerations**:
+   - Compute diffs on-demand when user opens the diff viewer
+   - Cache computed diffs in memory for active sessions
+   - Limit diff history to last N operations or time window
+
+5. **UI components needed**:
+   - `DiffViewer.tsx` - Main diff visualization component
+   - `DiffLine.tsx` - Individual line with +/- indicator
+   - `SessionTimeline.tsx` - Interactive timeline for session replay
+   - `CollaboratorDiffSummary.tsx` - Per-user change summary
+
+#### Current Implementation Status
+
+**Implemented (as of 2025-01):**
+- Batched change events with aggregated stats
+- Git-like diff summary display (`+N -M` format)
+- 2-second batching window for same-user changes
+- Color-coded stats (green for insertions, red for deletions)
+
+**Future work:**
+- Full line-by-line diff visualization
+- Session timeline with replay
+- Exportable session reports
+- Integration with version history (Phase 8)
 
 ---
 
