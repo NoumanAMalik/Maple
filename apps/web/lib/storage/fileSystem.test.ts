@@ -228,8 +228,11 @@ describe("FileSystem", () => {
 
             const state = await fs.loadTabState();
             expect(state).toBeDefined();
-            expect(state?.tabOrder).toEqual([file1.id, file2.id]);
-            expect(state?.activeFileId).toBe(file1.id);
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toEqual([file1.id, file2.id]);
+                expect(state.activeFileId).toBe(file1.id);
+            }
         });
 
         it("should return null when no tab state exists", async () => {
@@ -243,8 +246,11 @@ describe("FileSystem", () => {
             await fs.saveTabState([], null);
 
             const state = await fs.loadTabState();
-            expect(state?.tabOrder).toEqual([]);
-            expect(state?.activeFileId).toBeNull();
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toEqual([]);
+                expect(state.activeFileId).toBeNull();
+            }
         });
     });
 

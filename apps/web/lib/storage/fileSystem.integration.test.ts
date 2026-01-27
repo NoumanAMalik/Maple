@@ -301,8 +301,10 @@ describe("FileSystem Integration Tests", () => {
 
             const state = await fs.loadTabState();
             expect(state).toBeDefined();
-            expect(state?.tabOrder).toEqual(tabOrder);
             expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toEqual(tabOrder);
+            }
         });
 
         it("should persist active file ID", async () => {
@@ -313,13 +315,19 @@ describe("FileSystem Integration Tests", () => {
             await fs.saveTabState([file1.id, file2.id, file3.id], file2.id);
 
             const state = await fs.loadTabState();
-            expect(state?.activeFileId).toBe(file2.id);
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.activeFileId).toBe(file2.id);
+            }
 
             // Update active file
             await fs.saveTabState([file1.id, file2.id, file3.id], file3.id);
 
             const updatedState = await fs.loadTabState();
-            expect(updatedState?.activeFileId).toBe(file3.id);
+            expect(updatedState?.version).toBe(1);
+            if (updatedState?.version === 1) {
+                expect(updatedState.activeFileId).toBe(file3.id);
+            }
         });
 
         it("should handle persistence after file deletion", async () => {
@@ -334,8 +342,11 @@ describe("FileSystem Integration Tests", () => {
 
             // Tab state should still exist with deleted file ID
             const state = await fs.loadTabState();
-            expect(state?.tabOrder).toContain(file2.id);
-            expect(state?.activeFileId).toBe(file2.id);
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toContain(file2.id);
+                expect(state.activeFileId).toBe(file2.id);
+            }
 
             // Application should handle cleaning up invalid IDs
         });
@@ -347,8 +358,11 @@ describe("FileSystem Integration Tests", () => {
             await fs.saveTabState(invalidIds, "invalid-active-id");
 
             const state = await fs.loadTabState();
-            expect(state?.tabOrder).toEqual(invalidIds);
-            expect(state?.activeFileId).toBe("invalid-active-id");
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toEqual(invalidIds);
+                expect(state.activeFileId).toBe("invalid-active-id");
+            }
 
             // FileSystem doesn't validate IDs - application layer should handle this
         });
@@ -782,7 +796,10 @@ describe("FileSystem Integration Tests", () => {
 
             // Tab state should still have old reference
             const state = await fs.loadTabState();
-            expect(state?.tabOrder).toContain(file2.id);
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toContain(file2.id);
+            }
 
             // But file should be in new location
             const movedFile = await fs.readFile(file2.id);
@@ -893,8 +910,11 @@ describe("FileSystem Integration Tests", () => {
             await fs.saveTabState([], null);
 
             const state = await fs.loadTabState();
-            expect(state?.tabOrder).toEqual([]);
-            expect(state?.activeFileId).toBeNull();
+            expect(state?.version).toBe(1);
+            if (state?.version === 1) {
+                expect(state.tabOrder).toEqual([]);
+                expect(state.activeFileId).toBeNull();
+            }
         });
     });
 });

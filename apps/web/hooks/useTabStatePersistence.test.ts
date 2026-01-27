@@ -34,8 +34,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: false,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -60,8 +60,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -85,8 +85,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -109,8 +109,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -133,8 +133,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -159,8 +159,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -184,8 +184,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -211,17 +211,26 @@ describe("useTabStatePersistence", () => {
             const { fs } = await setupTestFileSystem();
             const onRestoreTabs = vi.fn();
 
+            const makeTab = (fileId: string): EditorTab => ({
+                id: fileId,
+                fileId,
+                fileName: fileId,
+                filePath: `/${fileId}`,
+                isDirty: false,
+                language: null,
+            });
+
             const { rerender } = renderHook(
-                ({ tabFileIds, activeFileId }) =>
+                ({ tabs, activeTabId }) =>
                     useTabStatePersistence({
                         fileSystem: fs,
                         isInitialized: true,
-                        tabFileIds,
-                        activeFileId,
+                        tabs,
+                        activeTabId,
                         onRestoreTabs,
                     }),
                 {
-                    initialProps: { tabFileIds: [] as string[], activeFileId: null as string | null },
+                    initialProps: { tabs: [] as EditorTab[], activeTabId: null as string | null },
                 },
             );
 
@@ -231,30 +240,43 @@ describe("useTabStatePersistence", () => {
             });
 
             const fileId = "file1.ts";
-            rerender({ tabFileIds: [fileId], activeFileId: fileId });
+            rerender({ tabs: [makeTab(fileId)], activeTabId: fileId });
 
             vi.advanceTimersByTime(400);
 
             const persisted = await fs.loadTabState();
             expect(persisted).not.toBeNull();
-            expect(persisted?.tabOrder).toEqual([fileId]);
+            expect(persisted?.version).toBe(2);
+            if (persisted?.version === 2) {
+                expect(persisted.tabs).toHaveLength(1);
+                expect(persisted.activeTabId).toBe(fileId);
+            }
         });
 
         it("should debounce save", async () => {
             const { fs } = await setupTestFileSystem();
             const onRestoreTabs = vi.fn();
 
+            const makeTab = (fileId: string): EditorTab => ({
+                id: fileId,
+                fileId,
+                fileName: fileId,
+                filePath: `/${fileId}`,
+                isDirty: false,
+                language: null,
+            });
+
             const { rerender } = renderHook(
-                ({ tabFileIds, activeFileId }) =>
+                ({ tabs, activeTabId }) =>
                     useTabStatePersistence({
                         fileSystem: fs,
                         isInitialized: true,
-                        tabFileIds,
-                        activeFileId,
+                        tabs,
+                        activeTabId,
                         onRestoreTabs,
                     }),
                 {
-                    initialProps: { tabFileIds: [] as string[], activeFileId: null as string | null },
+                    initialProps: { tabs: [] as EditorTab[], activeTabId: null as string | null },
                 },
             );
 
@@ -264,27 +286,40 @@ describe("useTabStatePersistence", () => {
             });
 
             const fileId = "file1.ts";
-            rerender({ tabFileIds: [fileId], activeFileId: fileId });
+            rerender({ tabs: [makeTab(fileId)], activeTabId: fileId });
             vi.advanceTimersByTime(100);
-            rerender({ tabFileIds: [fileId, "file2.ts"], activeFileId: fileId });
+            rerender({ tabs: [makeTab(fileId), makeTab("file2.ts")], activeTabId: fileId });
 
             vi.advanceTimersByTime(400);
 
             const persisted = await fs.loadTabState();
             expect(persisted).not.toBeNull();
-            expect(persisted?.tabOrder).toEqual([fileId, "file2.ts"]);
+            expect(persisted?.version).toBe(2);
+            if (persisted?.version === 2) {
+                expect(persisted.tabs).toHaveLength(2);
+                expect(persisted.activeTabId).toBe(fileId);
+            }
         });
 
         it("should save empty tab state", async () => {
             const { fs } = await setupTestFileSystem();
             const onRestoreTabs = vi.fn();
 
+            const makeTab = (fileId: string): EditorTab => ({
+                id: fileId,
+                fileId,
+                fileName: fileId,
+                filePath: `/${fileId}`,
+                isDirty: false,
+                language: null,
+            });
+
             renderHook(() =>
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -298,16 +333,16 @@ describe("useTabStatePersistence", () => {
             await fs.saveTabState([fileId], fileId);
 
             const { rerender } = renderHook(
-                ({ tabFileIds, activeFileId }) =>
+                ({ tabs, activeTabId }) =>
                     useTabStatePersistence({
                         fileSystem: fs,
                         isInitialized: true,
-                        tabFileIds,
-                        activeFileId,
+                        tabs,
+                        activeTabId,
                         onRestoreTabs,
                     }),
                 {
-                    initialProps: { tabFileIds: [fileId] as string[], activeFileId: fileId as string | null },
+                    initialProps: { tabs: [makeTab(fileId)] as EditorTab[], activeTabId: fileId as string | null },
                 },
             );
 
@@ -316,13 +351,16 @@ describe("useTabStatePersistence", () => {
                 await new Promise((resolve) => setImmediate(resolve));
             });
 
-            rerender({ tabFileIds: [], activeFileId: null });
+            rerender({ tabs: [], activeTabId: null });
 
             vi.advanceTimersByTime(400);
 
             const persisted = await fs.loadTabState();
-            expect(persisted?.tabOrder).toEqual([]);
-            expect(persisted?.activeFileId).toBeNull();
+            expect(persisted?.version).toBe(2);
+            if (persisted?.version === 2) {
+                expect(persisted.tabs).toEqual([]);
+                expect(persisted.activeTabId).toBeNull();
+            }
         });
     });
 
@@ -334,8 +372,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: null,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );
@@ -359,8 +397,8 @@ describe("useTabStatePersistence", () => {
                     useTabStatePersistence({
                         fileSystem: fs,
                         isInitialized,
-                        tabFileIds: [],
-                        activeFileId: null,
+                        tabs: [],
+                        activeTabId: null,
                         onRestoreTabs,
                     }),
                 {
@@ -387,8 +425,8 @@ describe("useTabStatePersistence", () => {
                     useTabStatePersistence({
                         fileSystem: fs,
                         isInitialized: true,
-                        tabFileIds: [],
-                        activeFileId: null,
+                        tabs: [],
+                        activeTabId: null,
                         onRestoreTabs: () => {},
                     }),
                 );
@@ -410,8 +448,8 @@ describe("useTabStatePersistence", () => {
                 useTabStatePersistence({
                     fileSystem: fs,
                     isInitialized: true,
-                    tabFileIds: [],
-                    activeFileId: null,
+                    tabs: [],
+                    activeTabId: null,
                     onRestoreTabs,
                 }),
             );

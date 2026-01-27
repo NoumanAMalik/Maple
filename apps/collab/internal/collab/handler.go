@@ -130,6 +130,27 @@ type SnapshotRestoredMessage struct {
 	Version    int    `json:"version"`
 }
 
+// GetDiffMessage - Client requests a diff between snapshots
+type GetDiffMessage struct {
+	V              int    `json:"v"`
+	T              string `json:"t"`
+	RequestID      string `json:"requestId"`
+	BaseSnapshotID string `json:"baseSnapshotId"`
+	Target         string `json:"target"` // "current"
+}
+
+// DiffResultMessage - Server sends diff result to client
+type DiffResultMessage struct {
+	V              int        `json:"v"`
+	T              string     `json:"t"`
+	RequestID      string     `json:"requestId"`
+	BaseSnapshotID string     `json:"baseSnapshotId"`
+	Target         string     `json:"target"`
+	ServerVersion  int        `json:"serverVersion"`
+	Language       string     `json:"language"`
+	Result         DiffResult `json:"result"`
+}
+
 var clientColors = []string{
 	"#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
 	"#2196f3", "#00bcd4", "#009688", "#4caf50",
@@ -271,6 +292,8 @@ func (h *WSHandler) readLoop(client *Client) {
 			h.handleRestore(client, data)
 		case "get_snapshots":
 			h.handleGetSnapshots(client)
+		case "get_diff":
+			h.handleGetDiff(client, data)
 		default:
 			h.logger.Warn("unknown message type", "type", base.T)
 		}
@@ -451,4 +474,48 @@ func (h *WSHandler) handleGetSnapshots(client *Client) {
 		Snapshots: snapshots,
 	}
 	client.Send(msg)
+}
+
+// handleGetDiff computes and sends a diff between a snapshot and current content
+func (h *WSHandler) handleGetDiff(client *Client, data []byte) {
+	var msg GetDiffMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		h.logger.Warn("invalid get_diff message", "clientId", client.ID, "error", err)
+		return
+	}
+
+	if msg.RequestID == "" {
+		client.Send(ErrorMessage{
+			V:       1,
+			T:       "error",
+			Code:    "invalid_request",
+			Message: "requestId is required",
+		})
+		return
+	}
+
+	// Compute diff
+	diff, err := client.Room.GetDiff(msg.BaseSnapshotID, msg.Target)
+	if err != nil {
+		client.Send(ErrorMessage{
+			V:       1,
+			T:       "error",
+			Code:    "diff_failed",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Send result only to requesting client
+	result := DiffResultMessage{
+		V:              1,
+		T:              "diff_result",
+		RequestID:      msg.RequestID,
+		BaseSnapshotID: msg.BaseSnapshotID,
+		Target:         msg.Target,
+		ServerVersion:  client.Room.GetVersion(),
+		Language:       client.Room.Language,
+		Result:         *diff,
+	}
+	client.Send(result)
 }

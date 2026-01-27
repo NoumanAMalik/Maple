@@ -92,6 +92,9 @@ type Room struct {
 	originalContent     string    // Content when sharing started
 	lastAutoSave        time.Time // Last auto-save timestamp
 	contentChangedSince bool      // Track if content changed since last snapshot
+
+	// Hibernation: track when room became empty for cleanup
+	emptyAt *time.Time
 }
 
 const opHistoryLimit = 256
@@ -120,11 +123,21 @@ func NewRoom(id, content, language, ownerID string, logger *slog.Logger) *Room {
 
 func (r *Room) AddClient(client *Client) {
 	r.clients.Store(client.ID, client)
+	r.mu.Lock()
+	r.emptyAt = nil // Wake up room from hibernation
+	r.mu.Unlock()
 	r.logger.Info("client joined room", "roomId", r.ID, "clientId", client.ID)
 }
 
 func (r *Room) RemoveClient(clientID string) {
 	r.clients.Delete(clientID)
+	r.mu.Lock()
+	if r.clientCountLocked() == 0 {
+		now := time.Now()
+		r.emptyAt = &now
+		r.logger.Info("room now empty, starting hibernation timer", "roomId", r.ID)
+	}
+	r.mu.Unlock()
 	r.logger.Info("client left room", "roomId", r.ID, "clientId", clientID)
 }
 
@@ -137,6 +150,12 @@ func (r *Room) GetClient(clientID string) (*Client, bool) {
 }
 
 func (r *Room) ClientCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.clientCountLocked()
+}
+
+func (r *Room) clientCountLocked() int {
 	count := 0
 	r.clients.Range(func(_, _ any) bool {
 		count++
@@ -517,33 +536,39 @@ func (r *Room) GetDiff(snapshot1ID, snapshot2ID string) (*DiffResult, error) {
 	defer r.mu.RUnlock()
 
 	var content1, content2 string
+	found1 := snapshot1ID == ""
+	found2 := snapshot2ID == ""
 
 	if snapshot1ID == "original" {
 		content1 = r.originalContent
+		found1 = true
 	} else {
 		for _, s := range r.snapshots {
 			if s.ID == snapshot1ID {
 				content1 = s.Content
+				found1 = true
 				break
 			}
 		}
-		if content1 == "" && snapshot1ID != "" {
-			return nil, errors.New("snapshot1 not found")
-		}
+	}
+	if !found1 {
+		return nil, errors.New("snapshot1 not found")
 	}
 
 	if snapshot2ID == "current" {
 		content2 = r.Content
+		found2 = true
 	} else {
 		for _, s := range r.snapshots {
 			if s.ID == snapshot2ID {
 				content2 = s.Content
+				found2 = true
 				break
 			}
 		}
-		if content2 == "" && snapshot2ID != "" {
-			return nil, errors.New("snapshot2 not found")
-		}
+	}
+	if !found2 {
+		return nil, errors.New("snapshot2 not found")
 	}
 
 	diff := computeLineDiff(content1, content2)
@@ -567,6 +592,16 @@ func (r *Room) HasChanges() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.contentChangedSince
+}
+
+// IsStale returns whether the room has been empty longer than the given duration
+func (r *Room) IsStale(maxEmptyDuration time.Duration) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.emptyAt == nil {
+		return false
+	}
+	return time.Since(*r.emptyAt) > maxEmptyDuration
 }
 
 // MarkContentChanged marks that content has changed since last snapshot

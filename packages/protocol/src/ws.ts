@@ -60,13 +60,46 @@ export interface GetSnapshotsMessage {
     t: "get_snapshots";
 }
 
+// Diff types
+export type DiffLineType = "add" | "remove" | "context";
+
+export interface DiffLine {
+    type: DiffLineType;
+    content: string;
+    oldLine?: number;
+    newLine?: number;
+}
+
+export interface DiffHunk {
+    oldStart: number;
+    oldCount: number;
+    newStart: number;
+    newCount: number;
+    lines: DiffLine[];
+}
+
+export interface DiffResult {
+    linesAdded: number;
+    linesRemoved: number;
+    hunks: DiffHunk[];
+}
+
+export interface GetDiffMessage {
+    v: 1;
+    t: "get_diff";
+    requestId: string;
+    baseSnapshotId: string; // snapshot id OR "original"
+    target: "current";
+}
+
 export type ClientMessage =
     | HelloMessage
     | OpMessage
     | PresenceMessage
     | SaveMessage
     | RestoreMessage
-    | GetSnapshotsMessage;
+    | GetSnapshotsMessage
+    | GetDiffMessage;
 
 export interface WelcomeMessage {
     v: 1;
@@ -147,6 +180,17 @@ export interface SnapshotRestoredMessage {
     version: number;
 }
 
+export interface DiffResultMessage {
+    v: 1;
+    t: "diff_result";
+    requestId: string;
+    baseSnapshotId: string;
+    target: "current";
+    serverVersion: number;
+    language: string;
+    result: DiffResult;
+}
+
 export type ServerMessage =
     | WelcomeMessage
     | AckMessage
@@ -158,4 +202,5 @@ export type ServerMessage =
     | UserLeftMessage
     | SnapshotCreatedMessage
     | SnapshotsListMessage
-    | SnapshotRestoredMessage;
+    | SnapshotRestoredMessage
+    | DiffResultMessage;

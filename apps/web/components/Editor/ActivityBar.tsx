@@ -39,6 +39,7 @@ interface ActivityBarProps {
     onToggleSearch: () => void;
     isShareOpen: boolean;
     onToggleShare: () => void;
+    isInSession?: boolean;
 }
 
 interface ShortcutCategory {
@@ -333,6 +334,7 @@ export function ActivityBar({
     onToggleSearch,
     isShareOpen,
     onToggleShare,
+    isInSession,
 }: ActivityBarProps) {
     const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -390,6 +392,9 @@ export function ActivityBar({
                     >
                         {isShareOpen && (
                             <div className="absolute right-0 top-0 h-full w-0.5 rounded-l-sm bg-[var(--ui-accent)]" />
+                        )}
+                        {isInSession && (
+                            <span className="absolute right-1 top-1 h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--level-success)]" />
                         )}
                         <Link2 className="h-5 w-5" />
                     </button>

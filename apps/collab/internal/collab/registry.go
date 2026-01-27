@@ -50,14 +50,13 @@ func (rr *RoomRegistry) cleanupLoop() {
 }
 
 func (rr *RoomRegistry) cleanupStaleRooms() {
-	now := time.Now()
-	minAge := 5 * time.Minute
+	maxEmptyDuration := 30 * time.Minute
 
 	rr.rooms.Range(func(key, value any) bool {
 		room := value.(*Room)
-		if room.ClientCount() == 0 && now.Sub(room.CreatedAt) > minAge {
+		if room.ClientCount() == 0 && room.IsStale(maxEmptyDuration) {
 			rr.rooms.Delete(key)
-			rr.logger.Info("cleaned up stale room", "roomId", room.ID, "age", now.Sub(room.CreatedAt))
+			rr.logger.Info("cleaned up stale room", "roomId", room.ID)
 		}
 		return true
 	})

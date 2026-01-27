@@ -12,6 +12,7 @@ import {
     FindReplaceSidebar,
     ShareSidebar,
     JoiningOverlay,
+    DiffViewer,
 } from "@/components/Editor";
 import type { CodeEditorHandle } from "@/components/Editor/CodeEditor";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
@@ -60,7 +61,7 @@ function getExtensionForLanguage(language?: SupportedLanguage | null): string {
 }
 
 function EditorContent() {
-    const { state, createFile, closeTab, dispatch, getFileSystem } = useWorkspace();
+    const { state, createFile, closeTab, dispatch, getFileSystem, openDiffTab } = useWorkspace();
     const searchParams = useSearchParams();
     const router = useRouter();
     const roomParam = searchParams.get("room");
@@ -442,7 +443,19 @@ function EditorContent() {
             <div className="flex flex-1 overflow-hidden">
                 {/* Editor Content */}
                 <div className="relative flex-1 overflow-hidden">
-                    {state.activeTabId ? (
+                    {activeTab?.kind === "diff" && activeTab.diffPayload ? (
+                        <DiffViewer
+                            baseSnapshotId={activeTab.diffPayload.baseSnapshotId}
+                            snapshotLabel={activeTab.diffPayload.snapshotLabel}
+                            onRequestDiff={() => collab.requestDiff(activeTab.diffPayload!.baseSnapshotId)}
+                            onRestore={
+                                collab.isOwner
+                                    ? () => collab.restoreSnapshot(activeTab.diffPayload!.baseSnapshotId)
+                                    : undefined
+                            }
+                            isOwner={collab.isOwner}
+                        />
+                    ) : state.activeTabId ? (
                         <EditorPane
                             tabId={state.activeTabId}
                             onCursorChange={handleCursorChange}
@@ -486,6 +499,7 @@ function EditorContent() {
                                 onDisplayNameChange={collab.setDisplayName}
                                 onSaveSnapshot={(message) => collab.saveSnapshot(activeContent, message)}
                                 onRestoreSnapshot={collab.restoreSnapshot}
+                                onOpenDiffTab={openDiffTab}
                             />
                         )}
                     </div>
@@ -517,6 +531,7 @@ function EditorContent() {
                         onToggleSearch={toggleSearchSidebar}
                         isShareOpen={isShareSidebarOpen}
                         onToggleShare={toggleShareSidebar}
+                        isInSession={collab.connectionStatus === "connected" && !!collab.roomId}
                     />
                 </div>
             </div>

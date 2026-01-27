@@ -39,16 +39,16 @@ export const CollaboratorCursor = memo(function CollaboratorCursor({
 
     return (
         <div
-            className="pointer-events-none absolute"
+            className="absolute"
             style={{
                 top: style.top,
                 left: style.left,
                 zIndex: 10,
             }}
         >
-            {/* Name pill */}
+            {/* Name pill - hidden by default, animates on hover */}
             <div
-                className="absolute -top-5 left-0 whitespace-nowrap rounded px-1 py-0.5 text-[10px] font-medium leading-tight"
+                className="absolute -top-5 left-0 whitespace-nowrap rounded px-1 py-0.5 text-[10px] font-medium leading-tight opacity-0 translate-y-1 transition-all duration-150 ease-out peer-hover:opacity-100 peer-hover:translate-y-0 pointer-events-none"
                 style={{
                     backgroundColor: color,
                     color: "#111418",
@@ -57,9 +57,9 @@ export const CollaboratorCursor = memo(function CollaboratorCursor({
                 {displayName}
             </div>
 
-            {/* Cursor caret */}
+            {/* Cursor caret - always visible */}
             <div
-                className="absolute top-0 left-0"
+                className="peer absolute top-0 left-0 pointer-events-auto"
                 style={{
                     width: 2,
                     height: config.lineHeight,
