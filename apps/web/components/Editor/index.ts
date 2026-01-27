@@ -3,6 +3,7 @@ export { CodeEditor } from "./CodeEditor";
 export { CollaboratorCursor, CollaboratorCursors } from "./CollaboratorCursor";
 export { CommandPalette } from "./CommandPalette";
 export { CursorRenderer } from "./CursorRenderer";
+export { DiffViewer } from "./DiffViewer";
 export { EditorPane } from "./EditorPane";
 export { Explorer } from "./Explorer";
 export { FindReplace } from "./FindReplace";

@@ -13,6 +13,8 @@ import type {
     SaveMessage,
     RestoreMessage,
     GetSnapshotsMessage,
+    GetDiffMessage,
+    DiffResult,
 } from "@maple/protocol";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
@@ -49,6 +51,7 @@ export class CollabClient {
     onSnapshotCreated: ((snapshot: Snapshot) => void) | null = null;
     onSnapshotsList: ((snapshots: Snapshot[]) => void) | null = null;
     onSnapshotRestored: ((content: string, snapshotId: string, version: number) => void) | null = null;
+    onDiffResult: ((requestId: string, result: DiffResult, serverVersion: number, language: string, baseSnapshotId: string) => void) | null = null;
 
     constructor() {
         this.clientId = generateClientId();
@@ -202,6 +205,15 @@ export class CollabClient {
                 this.pendingOps = [];
                 this.onSnapshotRestored?.(message.content, message.snapshotId, message.version);
                 break;
+            case "diff_result":
+                this.onDiffResult?.(
+                    message.requestId,
+                    message.result,
+                    message.serverVersion,
+                    message.language,
+                    message.baseSnapshotId
+                );
+                break;
         }
     }
 
@@ -309,6 +321,30 @@ export class CollabClient {
         };
         this.send(msg);
     }
+
+    requestDiff(baseSnapshotId: string): string {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            return "";
+        }
+
+        const requestId = generateRequestId();
+        const msg: GetDiffMessage = {
+            v: 1,
+            t: "get_diff",
+            requestId,
+            baseSnapshotId,
+            target: "current",
+        };
+        this.send(msg);
+        return requestId;
+    }
+}
+
+function generateRequestId(): string {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+        return crypto.randomUUID();
+    }
+    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 function generateOpId(): string {

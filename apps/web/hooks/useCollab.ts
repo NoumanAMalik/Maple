@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CollabClient, type ConnectionStatus } from "@/lib/collab/client";
-import type { Actor, Position, Selection, CreateRoomResponse, Operation, Snapshot } from "@maple/protocol";
+import type { Actor, Position, Selection, CreateRoomResponse, Operation, Snapshot, DiffResult } from "@maple/protocol";
 
 export type { ConnectionStatus };
 
@@ -68,6 +68,7 @@ export interface UseCollabResult {
     restoreSnapshot: (snapshotId: string) => void;
     onSnapshotRestored: ((content: string, snapshotId: string, version: number) => void) | null;
     setOnSnapshotRestored: (callback: ((content: string, snapshotId: string, version: number) => void) | null) => void;
+    requestDiff: (baseSnapshotId: string) => Promise<{ result: DiffResult; serverVersion: number; language: string }>;
 }
 
 const MAX_CHANGE_EVENTS = 20;
@@ -131,6 +132,15 @@ export function useCollab(): UseCollabResult {
         reject: (reason: Error) => void;
     } | null>(null);
     const onSnapshotRestoredRef = useRef<((content: string, snapshotId: string, version: number) => void) | null>(null);
+    const pendingDiffRequestsRef = useRef<Map<string, {
+        resolve: (value: { result: DiffResult; serverVersion: number; language: string }) => void;
+        reject: (reason: Error) => void;
+    }>>(new Map());
+
+    const rejectPendingDiffRequests = useCallback((error: Error) => {
+        pendingDiffRequestsRef.current.forEach(({ reject }) => reject(error));
+        pendingDiffRequestsRef.current.clear();
+    }, []);
 
     const getNextColor = useCallback(() => {
         const color = COLLABORATOR_COLORS[colorIndexRef.current % COLLABORATOR_COLORS.length];
@@ -193,6 +203,9 @@ export function useCollab(): UseCollabResult {
 
         client.onConnectionChange = (status) => {
             setConnectionStatus(status);
+            if (status === "disconnected") {
+                rejectPendingDiffRequests(new Error("Disconnected"));
+            }
         };
 
         client.onWelcome = (snapshot, version, presence, snapshotsList, isOwnerFlag) => {
@@ -282,6 +295,7 @@ export function useCollab(): UseCollabResult {
                 pendingJoinRef.current.reject(new Error(error.message));
                 pendingJoinRef.current = null;
             }
+            rejectPendingDiffRequests(new Error(error.message));
         };
 
         client.onSnapshotCreated = (snapshot: Snapshot) => {
@@ -303,10 +317,18 @@ export function useCollab(): UseCollabResult {
             onSnapshotRestoredRef.current?.(content, snapshotId, version);
         };
 
+        client.onDiffResult = (requestId, result, serverVersion, language) => {
+            const pending = pendingDiffRequestsRef.current.get(requestId);
+            if (pending) {
+                pending.resolve({ result, serverVersion, language });
+                pendingDiffRequestsRef.current.delete(requestId);
+            }
+        };
+
         return () => {
             client.disconnect();
         };
-    }, [getNextColor, pushChangeEvent]);
+    }, [getNextColor, pushChangeEvent, rejectPendingDiffRequests]);
 
     const startSharing = useCallback(async (content: string, language?: string): Promise<string> => {
         const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL;
@@ -372,6 +394,7 @@ export function useCollab(): UseCollabResult {
 
     const leaveRoom = useCallback(() => {
         clientRef.current?.disconnect();
+        rejectPendingDiffRequests(new Error("Disconnected"));
         setIsSharing(false);
         setShareUrl(null);
         setRoomId(null);
@@ -382,7 +405,7 @@ export function useCollab(): UseCollabResult {
         setRemoteOpsEvent(null);
         setSnapshots([]);
         colorIndexRef.current = 0;
-    }, []);
+    }, [rejectPendingDiffRequests]);
 
     const stopSharing = useCallback(async () => {
         if (roomId) {
@@ -397,6 +420,7 @@ export function useCollab(): UseCollabResult {
         }
 
         clientRef.current?.disconnect();
+        rejectPendingDiffRequests(new Error("Disconnected"));
         setIsSharing(false);
         setShareUrl(null);
         setRoomId(null);
@@ -407,7 +431,7 @@ export function useCollab(): UseCollabResult {
         setRemoteOpsEvent(null);
         setSnapshots([]);
         colorIndexRef.current = 0;
-    }, [roomId]);
+    }, [rejectPendingDiffRequests, roomId]);
 
     const updatePresence = useCallback((cursor: Position, selection?: Selection) => {
         lastPresenceRef.current = { cursor, selection };
@@ -454,6 +478,26 @@ export function useCollab(): UseCollabResult {
         [],
     );
 
+    const requestDiff = useCallback((baseSnapshotId: string): Promise<{ result: DiffResult; serverVersion: number; language: string }> => {
+        return new Promise((resolve, reject) => {
+            const requestId = clientRef.current?.requestDiff(baseSnapshotId);
+            if (!requestId) {
+                reject(new Error("Not connected"));
+                return;
+            }
+
+            pendingDiffRequestsRef.current.set(requestId, { resolve, reject });
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (pendingDiffRequestsRef.current.has(requestId)) {
+                    pendingDiffRequestsRef.current.delete(requestId);
+                    reject(new Error("Diff request timeout"));
+                }
+            }, 10000);
+        });
+    }, []);
+
     return {
         isSharing,
         shareUrl,
@@ -477,5 +521,6 @@ export function useCollab(): UseCollabResult {
         restoreSnapshot,
         onSnapshotRestored: onSnapshotRestoredRef.current,
         setOnSnapshotRestored,
+        requestDiff,
     };
 }

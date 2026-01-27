@@ -13,6 +13,12 @@ export interface EditorTab {
     language: SupportedLanguage | null;
     unsavedContent?: string; // Cache unsaved edits
     isPreviewMode?: boolean;
+    kind?: "file" | "diff";
+    ephemeral?: boolean;
+    diffPayload?: {
+        baseSnapshotId: string;
+        snapshotLabel?: string;
+    };
 }
 
 /**
@@ -34,13 +40,36 @@ export interface WorkspaceState {
     rootId: string;
 }
 
-export interface PersistedTabState {
+export interface PersistedTabFile {
+    kind: "file";
+    fileId: string;
+}
+
+export interface PersistedTabDiff {
+    kind: "diff";
+    baseSnapshotId: string;
+    snapshotLabel?: string;
+}
+
+export type PersistedTab = PersistedTabFile | PersistedTabDiff;
+
+export interface PersistedTabStateV1 {
     id: "__tab_state__";
     version: 1;
     tabOrder: string[];
     activeFileId: string | null;
     updatedAt: number;
 }
+
+export interface PersistedTabStateV2 {
+    id: "__tab_state__";
+    version: 2;
+    tabs: PersistedTab[];
+    activeTabId: string | null;
+    updatedAt: number;
+}
+
+export type PersistedTabState = PersistedTabStateV1 | PersistedTabStateV2;
 
 /**
  * Actions for workspace reducer
@@ -62,7 +91,8 @@ export type WorkspaceAction =
     | { type: "REFRESH_TREE"; payload: { fileTree: TreeNode[] } }
     | { type: "REORDER_TABS"; payload: { fromIndex: number; toIndex: number } }
     | { type: "TOGGLE_PREVIEW_MODE"; payload: { tabId: string } }
-    | { type: "LOAD_COLLAB_SNAPSHOT"; payload: { content: string; language?: string; roomId: string } };
+    | { type: "LOAD_COLLAB_SNAPSHOT"; payload: { content: string; language?: string; roomId: string } }
+    | { type: "OPEN_DIFF_TAB"; payload: { baseSnapshotId: string; snapshotLabel?: string } };
 
 /**
  * Context value exposed to consumers
@@ -85,4 +115,5 @@ export interface WorkspaceContextValue {
     toggleDirectory: (nodeId: string) => void;
     refreshTree: () => Promise<void>;
     moveNode: (nodeId: string, newParentId: string) => Promise<void>;
+    openDiffTab: (baseSnapshotId: string, snapshotLabel?: string) => void;
 }

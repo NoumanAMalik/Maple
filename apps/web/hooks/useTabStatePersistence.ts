@@ -3,23 +3,23 @@
 import { useEffect, useRef, useCallback } from "react";
 import { FileSystem } from "@/lib/storage";
 import { debounce } from "@/utils/debounce";
-import type { EditorTab } from "@/types/workspace";
+import type { EditorTab, PersistedTab, PersistedTabState } from "@/types/workspace";
 
 const TAB_PERSISTENCE_DELAY = 300;
 
 interface UseTabStatePersistenceOptions {
     fileSystem: FileSystem | null;
     isInitialized: boolean;
-    tabFileIds: string[];
-    activeFileId: string | null;
+    tabs: EditorTab[];
+    activeTabId: string | null;
     onRestoreTabs: (tabs: EditorTab[], activeTabId: string | null) => void;
 }
 
 export function useTabStatePersistence({
     fileSystem,
     isInitialized,
-    tabFileIds,
-    activeFileId,
+    tabs,
+    activeTabId,
     onRestoreTabs,
 }: UseTabStatePersistenceOptions): void {
     const fileSystemRef = useRef<FileSystem | null>(null);
@@ -37,14 +37,14 @@ export function useTabStatePersistence({
     }, [onRestoreTabs]);
 
     const saveTabState = useCallback(
-        debounce((tabOrder: string[], activeId: string | null) => {
-            console.log("[PERSIST] saveTabState called with:", { tabOrder, activeId });
+        debounce((tabOrder: string[], activeId: string | null, persistedTabs?: PersistedTab[], activePersistedTabId?: string | null) => {
+            console.log("[PERSIST] saveTabState called with:", { tabOrder, activeId, persistedTabs, activePersistedTabId });
             const fs = fileSystemRef.current;
             if (!fs) {
                 console.log("[PERSIST] No fileSystem, skipping save");
                 return;
             }
-            fs.saveTabState(tabOrder, activeId).catch(console.error);
+            fs.saveTabState(tabOrder, activeId, persistedTabs, activePersistedTabId).catch(console.error);
         }, TAB_PERSISTENCE_DELAY),
         [],
     );
@@ -71,31 +71,75 @@ export function useTabStatePersistence({
             }
 
             try {
-                const persisted = await fs.loadTabState();
+                const persisted = (await fs.loadTabState()) as PersistedTabState | null;
                 console.log("[PERSIST] Loaded persisted state:", persisted);
-                if (!persisted || persisted.tabOrder.length === 0) return;
+                if (!persisted) return;
 
                 const validTabs: EditorTab[] = [];
-                for (const fileId of persisted.tabOrder) {
-                    const file = await fs.readFile(fileId);
-                    if (file) {
-                        validTabs.push({
-                            id: file.id,
-                            fileId: file.id,
-                            fileName: file.name,
-                            filePath: file.path,
-                            isDirty: false,
-                            language: file.language,
-                        });
+                let persistedActiveTabId: string | null = null;
+
+                if (persisted.version === 2) {
+                    if (persisted.tabs.length === 0) return;
+                    persistedActiveTabId = persisted.activeTabId ?? null;
+
+                    for (const tab of persisted.tabs) {
+                        if (tab.kind === "file") {
+                            const file = await fs.readFile(tab.fileId);
+                            if (file) {
+                                validTabs.push({
+                                    id: file.id,
+                                    fileId: file.id,
+                                    fileName: file.name,
+                                    filePath: file.path,
+                                    isDirty: false,
+                                    language: file.language,
+                                });
+                            }
+                            continue;
+                        }
+
+                        if (tab.kind === "diff") {
+                            const diffTabId = `diff:${tab.baseSnapshotId}`;
+                            validTabs.push({
+                                id: diffTabId,
+                                fileId: diffTabId,
+                                fileName: tab.snapshotLabel ? `Diff – ${tab.snapshotLabel}` : "Diff View",
+                                filePath: "/diff",
+                                isDirty: false,
+                                language: null,
+                                kind: "diff",
+                                diffPayload: {
+                                    baseSnapshotId: tab.baseSnapshotId,
+                                    snapshotLabel: tab.snapshotLabel,
+                                },
+                            });
+                        }
+                    }
+                } else {
+                    if (persisted.tabOrder.length === 0) return;
+                    persistedActiveTabId = persisted.activeFileId;
+
+                    for (const fileId of persisted.tabOrder) {
+                        const file = await fs.readFile(fileId);
+                        if (file) {
+                            validTabs.push({
+                                id: file.id,
+                                fileId: file.id,
+                                fileName: file.name,
+                                filePath: file.path,
+                                isDirty: false,
+                                language: file.language,
+                            });
+                        }
                     }
                 }
 
                 if (validTabs.length === 0) return;
 
-                let validActiveFileId: string | null = persisted.activeFileId;
-                const activeTab = validTabs.find((t) => t.fileId === persisted.activeFileId);
+                let validActiveTabId: string | null = persistedActiveTabId;
+                const activeTab = validTabs.find((t) => t.id === persistedActiveTabId);
                 if (!activeTab && validTabs.length > 0) {
-                    validActiveFileId = validTabs[0].fileId;
+                    validActiveTabId = validTabs[0].id;
                 }
 
                 if (!mounted) return;
@@ -106,9 +150,9 @@ export function useTabStatePersistence({
                 console.log(
                     "[PERSIST] Calling onRestoreTabs with:",
                     validTabs.map((t) => t.fileName),
-                    validActiveFileId,
+                    validActiveTabId,
                 );
-                handler(validTabs, validActiveFileId);
+                handler(validTabs, validActiveTabId);
             } catch (error) {
                 console.error("Failed to restore tabs:", error);
             }
@@ -123,12 +167,26 @@ export function useTabStatePersistence({
 
     /**
      * Persist tab state whenever it changes, but only after initialization.
+     * Filter out ephemeral tabs (like diff tabs) before persisting.
      */
     useEffect(() => {
         if (!isInitialized) return;
         if (!fileSystemRef.current) return;
 
-        console.log("[PERSIST] Saving tab state:", { tabFileIds, activeFileId });
-        saveTabState(tabFileIds, activeFileId);
-    }, [isInitialized, tabFileIds, activeFileId, saveTabState]);
+        const persistableTabs = tabs.filter((t) => !t.ephemeral);
+        const tabOrder = persistableTabs.map((t) => t.fileId);
+        const persistedTabs: PersistedTab[] = persistableTabs.flatMap((t) => {
+            if (t.kind === "diff") {
+                if (!t.diffPayload) return [];
+                return [{
+                    kind: "diff",
+                    baseSnapshotId: t.diffPayload.baseSnapshotId,
+                    snapshotLabel: t.diffPayload.snapshotLabel,
+                }];
+            }
+            return [{ kind: "file", fileId: t.fileId }];
+        });
+        console.log("[PERSIST] Saving tab state:", { tabOrder, activeTabId, persistedTabs });
+        saveTabState(tabOrder, activeTabId, persistedTabs, activeTabId);
+    }, [isInitialized, tabs, activeTabId, saveTabState]);
 }

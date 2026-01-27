@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, memo } from "react";
-import { Copy, Check, Square, LogOut, X, History, RotateCcw, Save } from "lucide-react";
+import { Copy, Check, Square, LogOut, X, History, RotateCcw, Save, FileCode2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Collaborator, ConnectionStatus, ChangeEvent } from "@/hooks/useCollab";
 import type { Snapshot } from "@maple/protocol";
@@ -24,6 +24,7 @@ interface ShareSidebarProps {
     onDisplayNameChange: (name: string) => void;
     onSaveSnapshot: (message?: string) => void;
     onRestoreSnapshot: (snapshotId: string) => void;
+    onOpenDiffTab: (snapshotId: string, label?: string) => void;
 }
 
 function formatSnapshotTime(timestamp: string): string {
@@ -71,6 +72,7 @@ export const ShareSidebar = memo(function ShareSidebar({
     onDisplayNameChange,
     onSaveSnapshot,
     onRestoreSnapshot,
+    onOpenDiffTab,
 }: ShareSidebarProps) {
     const [copied, setCopied] = useState(false);
     const [localDisplayName, setLocalDisplayName] = useState(displayName);
@@ -307,16 +309,31 @@ export const ShareSidebar = memo(function ShareSidebar({
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {isOwner && snapshot.type !== "initial" && (
+                                                <div className="flex items-center gap-1">
                                                     <button
                                                         type="button"
-                                                        onClick={() => onRestoreSnapshot(snapshot.id)}
+                                                        onClick={() =>
+                                                            onOpenDiffTab(
+                                                                snapshot.id,
+                                                                snapshot.message || getSnapshotTypeLabel(snapshot.type),
+                                                            )
+                                                        }
                                                         className="shrink-0 rounded p-1 text-[var(--editor-line-number)] transition-colors hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)]"
-                                                        title="Restore to this snapshot"
+                                                        title="View diff"
                                                     >
-                                                        <RotateCcw className="h-3.5 w-3.5" />
+                                                        <FileCode2 className="h-3.5 w-3.5" />
                                                     </button>
-                                                )}
+                                                    {isOwner && snapshot.type !== "initial" && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onRestoreSnapshot(snapshot.id)}
+                                                            className="shrink-0 rounded p-1 text-[var(--editor-line-number)] transition-colors hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)]"
+                                                            title="Restore to this snapshot"
+                                                        >
+                                                            <RotateCcw className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -329,7 +346,9 @@ export const ShareSidebar = memo(function ShareSidebar({
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs text-[var(--editor-line-number)]">Unsaved changes</span>
-                                    <span className="text-xs text-[var(--editor-line-number)]">{recentChanges.length}</span>
+                                    <span className="text-xs text-[var(--editor-line-number)]">
+                                        {recentChanges.length}
+                                    </span>
                                 </div>
                                 <div className="space-y-1">
                                     {recentChanges.slice(0, 5).map((change) => (

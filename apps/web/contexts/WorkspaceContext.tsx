@@ -376,6 +376,40 @@ function workspaceReducer(state: WorkspaceState, action: WorkspaceAction): Works
             };
         }
 
+        case "OPEN_DIFF_TAB": {
+            const { baseSnapshotId, snapshotLabel } = action.payload;
+            const tabId = `diff:${baseSnapshotId}`;
+
+            const existingTab = state.tabs.find((t) => t.id === tabId);
+            if (existingTab) {
+                return {
+                    ...state,
+                    activeTabId: existingTab.id,
+                };
+            }
+
+            const diffTab: EditorTab = {
+                id: tabId,
+                fileId: tabId,
+                fileName: snapshotLabel ? `Diff – ${snapshotLabel}` : "Diff View",
+                filePath: "/diff",
+                isDirty: false,
+                language: null,
+                kind: "diff",
+                ephemeral: false,
+                diffPayload: {
+                    baseSnapshotId,
+                    snapshotLabel,
+                },
+            };
+
+            return {
+                ...state,
+                tabs: [...state.tabs, diffTab],
+                activeTabId: diffTab.id,
+            };
+        }
+
         default:
             return state;
     }
@@ -412,8 +446,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     useTabStatePersistence({
         fileSystem: fsRef.current,
         isInitialized: state.isInitialized,
-        tabFileIds: state.tabs.map((t) => t.fileId),
-        activeFileId: state.activeTabId,
+        tabs: state.tabs,
+        activeTabId: state.activeTabId,
         onRestoreTabs: (tabs, activeTabId) => {
             dispatch({ type: "RESTORE_TABS", payload: { tabs, activeTabId } });
         },
@@ -530,6 +564,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         [refreshTree],
     );
 
+    // Open diff tab
+    const openDiffTab = useCallback((baseSnapshotId: string, snapshotLabel?: string) => {
+        dispatch({ type: "OPEN_DIFF_TAB", payload: { baseSnapshotId, snapshotLabel } });
+    }, []);
+
     const value: WorkspaceContextValue = {
         state,
         dispatch,
@@ -544,6 +583,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         toggleDirectory,
         refreshTree,
         moveNode,
+        openDiffTab,
     };
 
     return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
