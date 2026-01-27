@@ -175,7 +175,7 @@ export function useTabStatePersistence({
 
         const persistableTabs = tabs.filter((t) => !t.ephemeral);
         const tabOrder = persistableTabs.map((t) => t.fileId);
-        const persistedTabs: PersistedTab[] = persistableTabs.flatMap((t) => {
+        const persistedTabs: PersistedTab[] = persistableTabs.flatMap<PersistedTab>((t) => {
             if (t.kind === "diff") {
                 if (!t.diffPayload) return [];
                 return [{
