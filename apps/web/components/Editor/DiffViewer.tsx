@@ -77,13 +77,18 @@ export const DiffViewer = memo(function DiffViewer({
     const rightPaneRef = useRef<HTMLDivElement>(null);
     const hunkRefs = useRef<(HTMLDivElement | null)[]>([]);
     const isSyncingRef = useRef(false);
+    const onRequestDiffRef = useRef(onRequestDiff);
+
+    useEffect(() => {
+        onRequestDiffRef.current = onRequestDiff;
+    }, [onRequestDiff]);
 
     // Fetch diff on mount
     const fetchDiff = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const { result, serverVersion } = await onRequestDiff();
+            const { result, serverVersion } = await onRequestDiffRef.current();
             setDiffResult(result);
             setServerVersion(serverVersion);
             setCurrentHunkIndex(0);
@@ -92,11 +97,11 @@ export const DiffViewer = memo(function DiffViewer({
         } finally {
             setLoading(false);
         }
-    }, [onRequestDiff]);
+    }, []);
 
     useEffect(() => {
         fetchDiff();
-    }, [fetchDiff]);
+    }, [fetchDiff, _baseSnapshotId]);
 
     // Synchronized scrolling
     const handleScroll = useCallback((source: "left" | "right") => {

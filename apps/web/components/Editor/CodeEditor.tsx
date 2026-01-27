@@ -366,6 +366,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
                         <CollaboratorCursors
                             collaborators={collaborators}
                             charWidth={coordinateConverter.charWidth}
+                            padding={coordinateConverter.padding}
                             config={editor.config}
                             firstVisibleLine={viewState.firstVisibleLine}
                             lastVisibleLine={viewState.lastVisibleLine}

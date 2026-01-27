@@ -79,7 +79,7 @@ export function useTabStatePersistence({
                 let persistedActiveTabId: string | null = null;
 
                 if (persisted.version === 2) {
-                    if (persisted.tabs.length === 0) return;
+                    if (!Array.isArray(persisted.tabs) || persisted.tabs.length === 0) return;
                     persistedActiveTabId = persisted.activeTabId ?? null;
 
                     for (const tab of persisted.tabs) {
@@ -116,7 +116,7 @@ export function useTabStatePersistence({
                         }
                     }
                 } else {
-                    if (persisted.tabOrder.length === 0) return;
+                    if (!Array.isArray(persisted.tabOrder) || persisted.tabOrder.length === 0) return;
                     persistedActiveTabId = persisted.activeFileId;
 
                     for (const fileId of persisted.tabOrder) {
