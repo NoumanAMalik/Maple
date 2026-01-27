@@ -7,6 +7,7 @@ import type { EditorConfig } from "@/types/editor";
 interface CollaboratorCursorProps {
     collaborator: Collaborator;
     charWidth: number;
+    padding: number;
     config: EditorConfig;
     firstVisibleLine: number;
     lastVisibleLine: number;
@@ -15,6 +16,7 @@ interface CollaboratorCursorProps {
 export const CollaboratorCursor = memo(function CollaboratorCursor({
     collaborator,
     charWidth,
+    padding,
     config,
     firstVisibleLine,
     lastVisibleLine,
@@ -27,7 +29,7 @@ export const CollaboratorCursor = memo(function CollaboratorCursor({
         if (!isVisible) return null;
 
         const top = (cursor.line - 1) * config.lineHeight;
-        const left = (cursor.column - 1) * charWidth;
+        const left = padding + (cursor.column - 1) * charWidth;
 
         return {
             top,
@@ -73,6 +75,7 @@ export const CollaboratorCursor = memo(function CollaboratorCursor({
 interface CollaboratorCursorsProps {
     collaborators: Collaborator[];
     charWidth: number;
+    padding: number;
     config: EditorConfig;
     firstVisibleLine: number;
     lastVisibleLine: number;
@@ -81,6 +84,7 @@ interface CollaboratorCursorsProps {
 export const CollaboratorCursors = memo(function CollaboratorCursors({
     collaborators,
     charWidth,
+    padding,
     config,
     firstVisibleLine,
     lastVisibleLine,
@@ -94,6 +98,7 @@ export const CollaboratorCursors = memo(function CollaboratorCursors({
                     key={collaborator.clientId}
                     collaborator={collaborator}
                     charWidth={charWidth}
+                    padding={padding}
                     config={config}
                     firstVisibleLine={firstVisibleLine}
                     lastVisibleLine={lastVisibleLine}
