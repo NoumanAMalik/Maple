@@ -7,16 +7,17 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /collab ./cmd/collab
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/collab ./cmd/collab
 
 FROM alpine:3.20
 
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /
+WORKDIR /app
 
-COPY --from=builder /collab /collab
+COPY --from=builder /app/collab ./collab
+COPY migrations ./migrations
 
 EXPOSE 8080
 
-CMD ["/collab"]
+CMD ["./collab"]

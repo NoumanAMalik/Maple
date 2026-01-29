@@ -43,15 +43,10 @@ type RoomInfoResponse struct {
 	ParticipantCount int    `json:"participantCount"`
 }
 
-type ErrorResponse struct {
-	Error string `json:"error"`
-	Code  string `json:"code"`
-}
-
 func (h *RoomHandlers) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	var req CreateRoomRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeError(w, http.StatusBadRequest, "invalid_request", "Invalid JSON body")
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid JSON body")
 		return
 	}
 
@@ -63,9 +58,7 @@ func (h *RoomHandlers) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		ShareURL: h.baseURL + "/share/" + room.ID,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	writeJSON(w, http.StatusCreated, resp)
 }
 
 func (h *RoomHandlers) GetRoom(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +66,7 @@ func (h *RoomHandlers) GetRoom(w http.ResponseWriter, r *http.Request) {
 
 	room, ok := h.registry.GetRoom(roomID)
 	if !ok {
-		h.writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
+		writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
 		return
 	}
 
@@ -83,8 +76,7 @@ func (h *RoomHandlers) GetRoom(w http.ResponseWriter, r *http.Request) {
 		ParticipantCount: room.ClientCount(),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *RoomHandlers) DeleteRoom(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +84,7 @@ func (h *RoomHandlers) DeleteRoom(w http.ResponseWriter, r *http.Request) {
 
 	_, ok := h.registry.GetRoom(roomID)
 	if !ok {
-		h.writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
+		writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
 		return
 	}
 
@@ -105,7 +97,7 @@ func (h *RoomHandlers) WebSocket(w http.ResponseWriter, r *http.Request) {
 
 	_, ok := h.registry.GetRoom(roomID)
 	if !ok {
-		h.writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
+		writeError(w, http.StatusNotFound, "room_not_found", "Room does not exist")
 		return
 	}
 
@@ -118,13 +110,4 @@ func (h *RoomHandlers) WebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.wsHandler.HandleConnection(r.Context(), conn, roomID)
-}
-
-func (h *RoomHandlers) writeError(w http.ResponseWriter, status int, code, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(ErrorResponse{
-		Error: message,
-		Code:  code,
-	})
 }
