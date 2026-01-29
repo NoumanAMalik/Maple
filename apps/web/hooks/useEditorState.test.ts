@@ -452,6 +452,23 @@ describe("useEditorState", () => {
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 1 });
             expect(result.current.selection?.active).toEqual({ line: 1, column: 6 });
         });
+
+        it("should clear selection when setSelection receives null", () => {
+            const { result } = renderHook(() => useEditorState({ initialContent: "Hello World" }));
+
+            act(() => {
+                result.current.setSelection({
+                    anchor: { line: 1, column: 1 },
+                    active: { line: 1, column: 6 },
+                });
+            });
+
+            act(() => {
+                result.current.setSelection(null);
+            });
+
+            expect(result.current.selection).toBeNull();
+        });
     });
 
     describe("Undo/Redo", () => {
@@ -566,6 +583,46 @@ describe("useEditorState", () => {
 
             expect(result.current.getContent()).toBe("");
         });
+
+        it("should emit diff operations for undo/redo replacements", () => {
+            const onOperations = vi.fn();
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Hello World", onOperations }),
+            );
+
+            act(() => {
+                result.current.setSelection({
+                    anchor: { line: 1, column: 7 },
+                    active: { line: 1, column: 12 },
+                });
+            });
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "You" });
+            });
+
+            onOperations.mockClear();
+
+            act(() => {
+                result.current.executeCommand({ type: "undo" });
+            });
+
+            expect(onOperations).toHaveBeenCalledTimes(1);
+            const undoOps = onOperations.mock.calls[0][0];
+            expect(undoOps).toHaveLength(2);
+            expect(undoOps.map((op: { type: string }) => op.type)).toEqual(["delete", "insert"]);
+
+            onOperations.mockClear();
+
+            act(() => {
+                result.current.executeCommand({ type: "redo" });
+            });
+
+            expect(onOperations).toHaveBeenCalledTimes(1);
+            const redoOps = onOperations.mock.calls[0][0];
+            expect(redoOps).toHaveLength(2);
+            expect(redoOps.map((op: { type: string }) => op.type)).toEqual(["delete", "insert"]);
+        });
     });
 
     describe("Paste and Cut", () => {
@@ -605,6 +662,76 @@ describe("useEditorState", () => {
             });
 
             expect(result.current.getContent()).toBe("Hello World");
+        });
+
+        it("should not emit operations for empty insert", () => {
+            const onOperations = vi.fn();
+            const { result } = renderHook(() => useEditorState({ onOperations }));
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "" });
+            });
+
+            expect(onOperations).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("Remote Operations", () => {
+        it("should ignore empty remote operations", () => {
+            const onChange = vi.fn();
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "Hello", onChange }),
+            );
+
+            act(() => {
+                result.current.applyRemoteOperations([]);
+            });
+
+            expect(result.current.getContent()).toBe("Hello");
+            expect(onChange).not.toHaveBeenCalled();
+        });
+
+        it("should apply remote insert and adjust cursor/selection", () => {
+            const { result } = renderHook(() =>
+                useEditorState({ initialContent: "abc\ndef" }),
+            );
+
+            act(() => {
+                result.current.setCursor({ line: 1, column: 2 });
+                result.current.setSelection({
+                    anchor: { line: 1, column: 2 },
+                    active: { line: 1, column: 3 },
+                });
+            });
+
+            act(() => {
+                result.current.applyRemoteOperations([{ type: "insert", pos: 0, text: "Z" }]);
+            });
+
+            expect(result.current.getContent()).toBe("Zabc\ndef");
+            expect(result.current.cursor).toEqual({ line: 1, column: 3 });
+            expect(result.current.selection?.anchor).toEqual({ line: 1, column: 3 });
+            expect(result.current.selection?.active).toEqual({ line: 1, column: 4 });
+            expect(result.current.getEditMetadata()?.changedFromLine).toBe(1);
+        });
+
+        it("should adjust cursor for remote deletes across branches", () => {
+            const { result } = renderHook(() => useEditorState({ initialContent: "abcdef" }));
+
+            act(() => {
+                result.current.setCursor({ line: 1, column: 4 });
+            });
+
+            act(() => {
+                result.current.applyRemoteOperations([
+                    { type: "delete", pos: 5, len: 1 }, // delete after cursor
+                    { type: "delete", pos: 0, len: 1 }, // delete before cursor
+                    { type: "delete", pos: 1, len: 2 }, // delete covering cursor
+                ]);
+            });
+
+            expect(result.current.getContent()).toBe("be");
+            expect(result.current.cursor).toEqual({ line: 1, column: 2 });
         });
     });
 
@@ -1039,6 +1166,24 @@ describe("useEditorState", () => {
             });
 
             expect(result.current.getContent()).toBe("Line 1Line 2");
+        });
+    });
+
+    describe("Edit Metadata", () => {
+        it("should clear edit metadata when requested", () => {
+            const { result } = renderHook(() => useEditorState());
+
+            act(() => {
+                result.current.executeCommand({ type: "insert", text: "Hello" });
+            });
+
+            expect(result.current.getEditMetadata()).not.toBeNull();
+
+            act(() => {
+                result.current.clearEditMetadata();
+            });
+
+            expect(result.current.getEditMetadata()).toBeNull();
         });
     });
 });
