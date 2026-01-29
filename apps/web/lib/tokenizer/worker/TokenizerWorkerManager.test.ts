@@ -95,6 +95,73 @@ describe("TokenizerWorkerManager", () => {
         expect(onError).toHaveBeenCalledWith("Worker error");
     });
 
+    it("should reuse the existing worker and ignore outdated updates", () => {
+        const onTokensReady = vi.fn();
+        const onError = vi.fn();
+        const manager = new TokenizerWorkerManager({ onTokensReady, onError });
+
+        manager.init("javascript", ["x"], 1);
+        const worker = FakeWorker.lastInstance;
+
+        manager.update("javascript", 1, ["x"], 1, 2);
+
+        expect(FakeWorker.lastInstance).toBe(worker);
+
+        worker?.onmessage?.(
+            {
+                data: {
+                    type: "update-complete",
+                    version: 1,
+                    changedFromLine: 1,
+                    lines: [],
+                },
+            } as MessageEvent,
+        );
+
+        expect(onTokensReady).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it("should ignore messages and requests after disposal", () => {
+        const onTokensReady = vi.fn();
+        const onError = vi.fn();
+        const manager = new TokenizerWorkerManager({ onTokensReady, onError });
+
+        manager.init("javascript", ["x"], 1);
+        const worker = FakeWorker.lastInstance;
+
+        manager.dispose();
+
+        worker?.onmessage?.(
+            {
+                data: {
+                    type: "update-complete",
+                    version: 2,
+                    changedFromLine: 1,
+                    lines: [],
+                },
+            } as MessageEvent,
+        );
+
+        expect(onTokensReady).not.toHaveBeenCalled();
+
+        FakeWorker.lastInstance = null;
+        manager.init("javascript", ["y"], 2);
+        expect(FakeWorker.lastInstance).toBeNull();
+    });
+
+    it("should allow dispose when no worker exists", () => {
+        const onTokensReady = vi.fn();
+        const onError = vi.fn();
+        const manager = new TokenizerWorkerManager({ onTokensReady, onError });
+
+        manager.dispose();
+
+        expect(FakeWorker.lastInstance).toBeNull();
+        expect(onTokensReady).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
     it("should dispose worker and ignore new requests", () => {
         const onTokensReady = vi.fn();
         const onError = vi.fn();
