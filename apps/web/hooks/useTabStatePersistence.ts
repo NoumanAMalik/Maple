@@ -37,15 +37,28 @@ export function useTabStatePersistence({
     }, [onRestoreTabs]);
 
     const saveTabState = useCallback(
-        debounce((tabOrder: string[], activeId: string | null, persistedTabs?: PersistedTab[], activePersistedTabId?: string | null) => {
-            console.log("[PERSIST] saveTabState called with:", { tabOrder, activeId, persistedTabs, activePersistedTabId });
-            const fs = fileSystemRef.current;
-            if (!fs) {
-                console.log("[PERSIST] No fileSystem, skipping save");
-                return;
-            }
-            fs.saveTabState(tabOrder, activeId, persistedTabs, activePersistedTabId).catch(console.error);
-        }, TAB_PERSISTENCE_DELAY),
+        debounce(
+            (
+                tabOrder: string[],
+                activeId: string | null,
+                persistedTabs?: PersistedTab[],
+                activePersistedTabId?: string | null,
+            ) => {
+                console.log("[PERSIST] saveTabState called with:", {
+                    tabOrder,
+                    activeId,
+                    persistedTabs,
+                    activePersistedTabId,
+                });
+                const fs = fileSystemRef.current;
+                if (!fs) {
+                    console.log("[PERSIST] No fileSystem, skipping save");
+                    return;
+                }
+                fs.saveTabState(tabOrder, activeId, persistedTabs, activePersistedTabId).catch(console.error);
+            },
+            TAB_PERSISTENCE_DELAY,
+        ),
         [],
     );
 
@@ -178,11 +191,13 @@ export function useTabStatePersistence({
         const persistedTabs: PersistedTab[] = persistableTabs.flatMap<PersistedTab>((t) => {
             if (t.kind === "diff") {
                 if (!t.diffPayload) return [];
-                return [{
-                    kind: "diff",
-                    baseSnapshotId: t.diffPayload.baseSnapshotId,
-                    snapshotLabel: t.diffPayload.snapshotLabel,
-                }];
+                return [
+                    {
+                        kind: "diff",
+                        baseSnapshotId: t.diffPayload.baseSnapshotId,
+                        snapshotLabel: t.diffPayload.snapshotLabel,
+                    },
+                ];
             }
             return [{ kind: "file", fileId: t.fileId }];
         });

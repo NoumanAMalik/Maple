@@ -132,13 +132,20 @@ export function useCollab(): UseCollabResult {
         reject: (reason: Error) => void;
     } | null>(null);
     const onSnapshotRestoredRef = useRef<((content: string, snapshotId: string, version: number) => void) | null>(null);
-    const pendingDiffRequestsRef = useRef<Map<string, {
-        resolve: (value: { result: DiffResult; serverVersion: number; language: string }) => void;
-        reject: (reason: Error) => void;
-    }>>(new Map());
+    const pendingDiffRequestsRef = useRef<
+        Map<
+            string,
+            {
+                resolve: (value: { result: DiffResult; serverVersion: number; language: string }) => void;
+                reject: (reason: Error) => void;
+            }
+        >
+    >(new Map());
 
     const rejectPendingDiffRequests = useCallback((error: Error) => {
-        pendingDiffRequestsRef.current.forEach(({ reject }) => reject(error));
+        pendingDiffRequestsRef.current.forEach(({ reject }) => {
+            reject(error);
+        });
         pendingDiffRequestsRef.current.clear();
     }, []);
 
@@ -478,25 +485,28 @@ export function useCollab(): UseCollabResult {
         [],
     );
 
-    const requestDiff = useCallback((baseSnapshotId: string): Promise<{ result: DiffResult; serverVersion: number; language: string }> => {
-        return new Promise((resolve, reject) => {
-            const requestId = clientRef.current?.requestDiff(baseSnapshotId);
-            if (!requestId) {
-                reject(new Error("Not connected"));
-                return;
-            }
-
-            pendingDiffRequestsRef.current.set(requestId, { resolve, reject });
-
-            // Timeout after 10 seconds
-            setTimeout(() => {
-                if (pendingDiffRequestsRef.current.has(requestId)) {
-                    pendingDiffRequestsRef.current.delete(requestId);
-                    reject(new Error("Diff request timeout"));
+    const requestDiff = useCallback(
+        (baseSnapshotId: string): Promise<{ result: DiffResult; serverVersion: number; language: string }> => {
+            return new Promise((resolve, reject) => {
+                const requestId = clientRef.current?.requestDiff(baseSnapshotId);
+                if (!requestId) {
+                    reject(new Error("Not connected"));
+                    return;
                 }
-            }, 10000);
-        });
-    }, []);
+
+                pendingDiffRequestsRef.current.set(requestId, { resolve, reject });
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (pendingDiffRequestsRef.current.has(requestId)) {
+                        pendingDiffRequestsRef.current.delete(requestId);
+                        reject(new Error("Diff request timeout"));
+                    }
+                }, 10000);
+            });
+        },
+        [],
+    );
 
     return {
         isSharing,

@@ -29,7 +29,10 @@ describe("JavaScript Tokenizer Performance", () => {
     });
 
     bench("tokenize with template string", () => {
-        javascriptTokenizer.tokenizeLine("const msg = `Hello ${user.name}, you have ${count} items`;", INITIAL_STATE);
+        javascriptTokenizer.tokenizeLine(
+            `const msg = \`Hello ${"$"}{user.name}, you have ${"$"}{count} items\`;`,
+            INITIAL_STATE,
+        );
     });
 
     bench("tokenize with comments", () => {
