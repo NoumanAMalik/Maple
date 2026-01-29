@@ -10,6 +10,7 @@
             "outputs": [".next/**", "!.next/cache/**", "bin/**"]
         },
         "lint": {},
+        "format": {},
         "type-check": {},
         "test": {}
     }

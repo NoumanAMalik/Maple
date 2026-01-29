@@ -184,35 +184,32 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     }, []);
 
     // Push current state to undo stack
-    const pushToHistory = useCallback(
-        (force = false) => {
-            const now = Date.now();
-            const timeSinceLastEdit = now - lastEditTimeRef.current;
-            const shouldBatch = timeSinceLastEdit < HISTORY_BATCH_WINDOW && !force;
+    const pushToHistory = useCallback((force = false) => {
+        const now = Date.now();
+        const timeSinceLastEdit = now - lastEditTimeRef.current;
+        const shouldBatch = timeSinceLastEdit < HISTORY_BATCH_WINDOW && !force;
 
-            if (!shouldBatch) {
-                const entry: HistoryEntry = {
-                    snapshot: bufferRef.current.snapshot(),
-                    cursor: cursorRef.current,
-                    selection: selectionRef.current,
-                    timestamp: now,
-                };
+        if (!shouldBatch) {
+            const entry: HistoryEntry = {
+                snapshot: bufferRef.current.snapshot(),
+                cursor: cursorRef.current,
+                selection: selectionRef.current,
+                timestamp: now,
+            };
 
-                undoStackRef.current.push(entry);
+            undoStackRef.current.push(entry);
 
-                // Trim history if too large
-                if (undoStackRef.current.length > MAX_HISTORY_SIZE) {
-                    undoStackRef.current = undoStackRef.current.slice(-MAX_HISTORY_SIZE);
-                }
-
-                // Clear redo stack on new edit
-                redoStackRef.current = [];
+            // Trim history if too large
+            if (undoStackRef.current.length > MAX_HISTORY_SIZE) {
+                undoStackRef.current = undoStackRef.current.slice(-MAX_HISTORY_SIZE);
             }
 
-            lastEditTimeRef.current = now;
-        },
-        [],
-    );
+            // Clear redo stack on new edit
+            redoStackRef.current = [];
+        }
+
+        lastEditTimeRef.current = now;
+    }, []);
 
     // Insert text at cursor position
     const insertText = useCallback(
@@ -746,17 +743,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                     break;
             }
         },
-        [
-            pushToHistory,
-            insertText,
-            deleteBackward,
-            deleteForward,
-            moveCursor,
-            moveCursorTo,
-            selectAll,
-            undo,
-            redo,
-        ],
+        [pushToHistory, insertText, deleteBackward, deleteForward, moveCursor, moveCursorTo, selectAll, undo, redo],
     );
 
     // Get selected text
