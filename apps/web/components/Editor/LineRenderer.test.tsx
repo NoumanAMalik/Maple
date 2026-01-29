@@ -964,6 +964,7 @@ describe("LineRenderer", () => {
             );
 
             const firstCallCount = mockGetLine.mock.calls.length;
+            expect(firstCallCount).toBeGreaterThan(0);
             mockGetLine.mockClear();
 
             // Re-render with same props
