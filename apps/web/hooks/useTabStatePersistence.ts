@@ -62,6 +62,13 @@ export function useTabStatePersistence({
         [],
     );
 
+    // Cleanup debounced saves on unmount to avoid late writes
+    useEffect(() => {
+        return () => {
+            saveTabState.cancel();
+        };
+    }, [saveTabState]);
+
     /**
      * One-time restore when the workspace is initialized.
      * - Runs only once per mount

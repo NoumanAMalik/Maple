@@ -4,22 +4,44 @@ import { useEditorPersistence } from "./useEditorPersistence";
 import "fake-indexeddb/auto";
 import { FileSystem } from "@/lib/storage";
 
-async function createTestFile(): Promise<string> {
+const DB_NAME = "maple-fs";
+const openFileSystems: FileSystem[] = [];
+
+async function resetDatabase(): Promise<void> {
+    await Promise.all(openFileSystems.map((fs) => fs.storage.close()));
+    openFileSystems.length = 0;
+
+    await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.deleteDatabase(DB_NAME);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+        request.onblocked = () => resolve();
+    });
+}
+
+async function createFileSystem(): Promise<FileSystem> {
     const fs = new FileSystem();
+    openFileSystems.push(fs);
     await fs.init();
     await fs.ensureRootDirectory();
+    return fs;
+}
+
+async function createTestFile(): Promise<string> {
+    const fs = await createFileSystem();
     const file = await fs.createFile("root", "test-file-id.ts", "initial content");
     return file.id;
 }
 
 describe("useEditorPersistence", () => {
-    afterEach(() => {
+    afterEach(async () => {
         vi.clearAllMocks();
         vi.useRealTimers();
+        await resetDatabase();
     });
 
     describe("Initialization", () => {
-        it("should initialize with isReady false initially", () => {
+        it("should initialize with isReady false initially", async () => {
             const { result } = renderHook(() =>
                 useEditorPersistence({
                     fileId: "test-id",
@@ -30,9 +52,13 @@ describe("useEditorPersistence", () => {
 
             expect(result.current.isReady).toBe(false);
             expect(result.current.isSaving).toBe(false);
+
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
+            });
         });
 
-        it("should initialize with isSaving false", () => {
+        it("should initialize with isSaving false", async () => {
             const { result } = renderHook(() =>
                 useEditorPersistence({
                     fileId: "test-id",
@@ -42,6 +68,10 @@ describe("useEditorPersistence", () => {
             );
 
             expect(result.current.isSaving).toBe(false);
+
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
+            });
         });
     });
 
@@ -198,6 +228,10 @@ describe("useEditorPersistence", () => {
 
             expect(result.current.isReady).toBe(false);
             await expect(result.current.createFile("root", "test.ts")).rejects.toThrow("File system not ready");
+
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true);
+            });
         });
 
         it("should create file with content", async () => {

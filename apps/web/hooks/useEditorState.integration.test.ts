@@ -175,7 +175,7 @@ describe("useEditorState - Integration Tests", () => {
 
             // Position cursor at middle line
             act(() => {
-                result.current.setCursor(createCursor(2, 4));
+                result.current.setCursor(createCursor(2, 5));
             });
 
             // Insert text at cursor
@@ -183,7 +183,7 @@ describe("useEditorState - Integration Tests", () => {
                 result.current.executeCommand({ type: "insert", text: " edited" });
             });
 
-            expect(result.current.cursor).toEqual({ line: 2, column: 11 });
+            expect(result.current.cursor).toEqual({ line: 2, column: 12 });
             expect(result.current.getLine(2)).toBe("Line edited 2");
             expect(result.current.getLine(1)).toBe("Line 1");
             expect(result.current.getLine(3)).toBe("Line 3");
@@ -1442,7 +1442,7 @@ describe("useEditorState - Integration Tests", () => {
 
             // Select "Beta Gamma"
             act(() => {
-                result.current.setSelection(createSelection(1, 7, 1, 18));
+                result.current.setSelection(createSelection(1, 7, 1, 17));
             });
 
             expect(result.current.getSelectedText()).toBe("Beta Gamma");

@@ -391,7 +391,7 @@ describe("useFindReplace", () => {
 
             act(() => {
                 result.current.setFindQuery("\\$(\\d+)");
-                result.current.setReplaceQuery("USD$1");
+                result.current.setReplaceQuery("USD$$$1");
                 result.current.toggleUseRegex();
             });
 
