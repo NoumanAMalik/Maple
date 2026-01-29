@@ -121,11 +121,14 @@ export const DiffViewer = memo(function DiffViewer({
     }, []);
 
     // Navigate to hunk
-    const goToHunk = useCallback((index: number) => {
-        if (!diffResult || index < 0 || index >= diffResult.hunks.length) return;
-        setCurrentHunkIndex(index);
-        hunkRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, [diffResult]);
+    const goToHunk = useCallback(
+        (index: number) => {
+            if (!diffResult || index < 0 || index >= diffResult.hunks.length) return;
+            setCurrentHunkIndex(index);
+            hunkRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+        [diffResult],
+    );
 
     if (loading) {
         return (
@@ -140,6 +143,7 @@ export const DiffViewer = memo(function DiffViewer({
             <div className="flex h-full flex-col items-center justify-center gap-4 bg-[var(--editor-bg)]">
                 <p className="text-sm text-[var(--level-danger)]">{error}</p>
                 <button
+                    type="button"
                     onClick={fetchDiff}
                     className="flex items-center gap-2 rounded px-3 py-1.5 text-sm text-[var(--editor-fg)] hover:bg-[var(--ui-hover)]"
                 >
@@ -160,25 +164,18 @@ export const DiffViewer = memo(function DiffViewer({
             {/* Toolbar */}
             <div className="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-2">
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-[var(--editor-fg)]">
-                        {snapshotLabel || "Snapshot"} → Current
-                    </span>
+                    <span className="text-sm text-[var(--editor-fg)]">{snapshotLabel || "Snapshot"} → Current</span>
                     <div className="flex items-center gap-2 text-xs">
-                        {linesAdded > 0 && (
-                            <span className="text-[var(--level-success)]">+{linesAdded}</span>
-                        )}
-                        {linesRemoved > 0 && (
-                            <span className="text-[var(--level-danger)]">-{linesRemoved}</span>
-                        )}
+                        {linesAdded > 0 && <span className="text-[var(--level-success)]">+{linesAdded}</span>}
+                        {linesRemoved > 0 && <span className="text-[var(--level-danger)]">-{linesRemoved}</span>}
                     </div>
-                    <span className="text-xs text-[var(--editor-line-number)]">
-                        v{serverVersion}
-                    </span>
+                    <span className="text-xs text-[var(--editor-line-number)]">v{serverVersion}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     {hasChanges && (
                         <>
                             <button
+                                type="button"
                                 onClick={() => goToHunk(currentHunkIndex - 1)}
                                 disabled={currentHunkIndex === 0}
                                 className="flex h-7 w-7 items-center justify-center rounded text-[var(--editor-fg)] hover:bg-[var(--ui-hover)] disabled:opacity-30"
@@ -190,6 +187,7 @@ export const DiffViewer = memo(function DiffViewer({
                                 {currentHunkIndex + 1} / {hunks.length}
                             </span>
                             <button
+                                type="button"
                                 onClick={() => goToHunk(currentHunkIndex + 1)}
                                 disabled={currentHunkIndex === hunks.length - 1}
                                 className="flex h-7 w-7 items-center justify-center rounded text-[var(--editor-fg)] hover:bg-[var(--ui-hover)] disabled:opacity-30"
@@ -200,6 +198,7 @@ export const DiffViewer = memo(function DiffViewer({
                         </>
                     )}
                     <button
+                        type="button"
                         onClick={fetchDiff}
                         className="flex h-7 w-7 items-center justify-center rounded text-[var(--editor-fg)] hover:bg-[var(--ui-hover)]"
                         title="Refresh diff"
@@ -208,6 +207,7 @@ export const DiffViewer = memo(function DiffViewer({
                     </button>
                     {isOwner && onRestore && (
                         <button
+                            type="button"
                             onClick={onRestore}
                             className="flex items-center gap-1.5 rounded bg-[var(--ui-accent)] px-2.5 py-1 text-xs text-[var(--editor-bg)] hover:bg-[var(--ui-accent-hover)]"
                         >
@@ -235,7 +235,9 @@ export const DiffViewer = memo(function DiffViewer({
                             {hunks.map((hunk, hunkIdx) => (
                                 <div
                                     key={hunkIdx}
-                                    ref={(el) => { hunkRefs.current[hunkIdx] = el; }}
+                                    ref={(el) => {
+                                        hunkRefs.current[hunkIdx] = el;
+                                    }}
                                 >
                                     {/* Hunk header */}
                                     <div className="sticky top-0 bg-[var(--ui-sidebar-bg)] px-3 py-1 text-xs text-[var(--editor-line-number)]">
@@ -250,11 +252,7 @@ export const DiffViewer = memo(function DiffViewer({
                     </div>
 
                     {/* Right pane (new) */}
-                    <div
-                        ref={rightPaneRef}
-                        onScroll={() => handleScroll("right")}
-                        className="flex-1 overflow-auto"
-                    >
+                    <div ref={rightPaneRef} onScroll={() => handleScroll("right")} className="flex-1 overflow-auto">
                         <div className="min-w-max">
                             {hunks.map((hunk, hunkIdx) => (
                                 <div key={hunkIdx}>
@@ -291,11 +289,7 @@ const DiffRowLeft = memo(function DiffRowLeft({ line }: { line: DiffLine | null 
 
     return (
         <div
-            className={cn(
-                "flex h-6",
-                isRemoved && "bg-[var(--level-danger)]/10",
-                isContext && "bg-[var(--editor-bg)]"
-            )}
+            className={cn("flex h-6", isRemoved && "bg-[var(--level-danger)]/10", isContext && "bg-[var(--editor-bg)]")}
         >
             <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-xs leading-6 text-[var(--editor-line-number)]">
                 {line.oldLine}
@@ -323,11 +317,7 @@ const DiffRowRight = memo(function DiffRowRight({ line }: { line: DiffLine | nul
 
     return (
         <div
-            className={cn(
-                "flex h-6",
-                isAdded && "bg-[var(--level-success)]/10",
-                isContext && "bg-[var(--editor-bg)]"
-            )}
+            className={cn("flex h-6", isAdded && "bg-[var(--level-success)]/10", isContext && "bg-[var(--editor-bg)]")}
         >
             <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-xs leading-6 text-[var(--editor-line-number)]">
                 {line.newLine}

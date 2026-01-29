@@ -86,8 +86,12 @@ vi.mock("./HiddenTextarea", () => ({
             }}
             onCompositionEnd={(e) => {
                 // IME composition end
-                if (e.data) {
-                    onCommand({ type: "insert", text: e.data });
+                const text =
+                    e.data ??
+                    (e as unknown as { nativeEvent?: { data?: string } }).nativeEvent?.data ??
+                    (e.currentTarget as HTMLTextAreaElement).value;
+                if (text) {
+                    onCommand({ type: "insert", text });
                 }
             }}
         />
@@ -498,6 +502,7 @@ describe("CodeEditor", () => {
 
             fireEvent.compositionEnd(textarea, {
                 data: "日本語",
+                target: { value: "日本語" },
             });
 
             expect(mockExecuteCommand).toHaveBeenCalledWith({
@@ -549,7 +554,7 @@ describe("CodeEditor", () => {
                 expect.objectContaining({
                     isFocused: true,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
 
@@ -582,7 +587,7 @@ describe("CodeEditor", () => {
                 expect.objectContaining({
                     isFocused: false,
                 }),
-                expect.anything(),
+                undefined,
             );
 
             // Focus
@@ -593,7 +598,7 @@ describe("CodeEditor", () => {
                 expect.objectContaining({
                     isFocused: true,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
     });
@@ -729,7 +734,7 @@ describe("CodeEditor", () => {
                 expect.objectContaining({
                     tabSize: 2,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
     });
@@ -959,7 +964,7 @@ describe("CodeEditor", () => {
                         lineHeight: 20,
                     }),
                 }),
-                expect.anything(),
+                undefined,
             );
         });
 
@@ -974,7 +979,7 @@ describe("CodeEditor", () => {
                     cursor: { line: 1, column: 1 },
                     version: 0,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
 
@@ -988,7 +993,7 @@ describe("CodeEditor", () => {
                     charWidth: 8,
                     isFocused: false,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
 
@@ -1002,7 +1007,7 @@ describe("CodeEditor", () => {
                     getLine: mockGetLine,
                     charWidth: 8,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
 
@@ -1016,7 +1021,7 @@ describe("CodeEditor", () => {
                     autoFocus: true,
                     tabSize: 4,
                 }),
-                expect.anything(),
+                undefined,
             );
         });
     });
@@ -1060,6 +1065,7 @@ describe("CodeEditor", () => {
 
         it("should handle empty searchMatches array", () => {
             render(<CodeEditor searchMatches={[]} currentMatchIndex={0} />);
+            mockScrollToPosition.mockClear();
 
             // Should not scroll to match
             expect(mockScrollToPosition).not.toHaveBeenCalled();
@@ -1089,6 +1095,7 @@ describe("CodeEditor", () => {
             ];
 
             render(<CodeEditor searchMatches={searchMatches} currentMatchIndex={10} />);
+            mockScrollToPosition.mockClear();
 
             // Should not scroll (index out of bounds)
             expect(mockScrollToPosition).not.toHaveBeenCalled();
@@ -1101,6 +1108,7 @@ describe("CodeEditor", () => {
             ];
 
             render(<CodeEditor searchMatches={searchMatches} currentMatchIndex={-1} />);
+            mockScrollToPosition.mockClear();
 
             // Should not scroll (index negative)
             expect(mockScrollToPosition).not.toHaveBeenCalled();

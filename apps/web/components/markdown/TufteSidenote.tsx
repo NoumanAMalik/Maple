@@ -14,7 +14,7 @@ export function TufteSidenote({ children }: TufteSidenoteProps): ReactNode {
 
     return (
         <>
-            <label htmlFor={id} className="margin-toggle sidenote-number" />
+            <label htmlFor={id} className="margin-toggle sidenote-number" aria-label="Toggle sidenote" />
             <input id={id} type="checkbox" className="margin-toggle" />
             <span className="sidenote">{children}</span>
         </>

@@ -28,7 +28,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.2.15
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -44,11 +44,15 @@ jobs:
       - name: Type check
         run: bun type-check
 
+      - name: Format
+        run: bun format
+
       - name: Run linter
         run: bun lint
 
       - name: Run tests with coverage
         run: bun test:coverage
+        working-directory: apps/web
         env:
           NODE_ENV: test
 
@@ -56,7 +60,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
+          files: ./apps/web/coverage/lcov.info
           flags: unittests
           name: codecov-maple
           fail_ci_if_error: true
@@ -65,7 +69,7 @@ jobs:
       - name: Generate coverage summary
         if: always()
         run: |
-          if [ -f coverage/coverage-summary.json ]; then
+          if [ -f apps/web/coverage/coverage-summary.json ]; then
             echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| Metric | Coverage | Threshold | Status |" >> $GITHUB_STEP_SUMMARY
@@ -97,12 +101,12 @@ jobs:
             const fs = require('fs');
 
             // Check if coverage summary exists
-            if (!fs.existsSync('coverage/coverage-summary.json')) {
+            if (!fs.existsSync('apps/web/coverage/coverage-summary.json')) {
               console.log('No coverage summary found');
               return;
             }
 
-            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            const coverage = JSON.parse(fs.readFileSync('apps/web/coverage/coverage-summary.json', 'utf8'));
             const total = coverage.total;
 
             // Helper function to get status emoji
@@ -168,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage/
+          path: apps/web/coverage/
           retention-days: 30
 
   benchmark:
@@ -185,7 +189,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.2.15
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -200,12 +204,13 @@ jobs:
 
       - name: Run benchmarks
         run: bun test:bench
+        working-directory: apps/web
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'customSmallerIsBetter'
-          output-file-path: benchmark-results.json
+          output-file-path: apps/web/benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           # Alert if performance degrades
@@ -221,7 +226,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: benchmark-results.json
+          path: apps/web/benchmark-results.json
           retention-days: 90
 
   # Job to check all required checks pass

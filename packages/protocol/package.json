@@ -9,9 +9,11 @@
     },
     "scripts": {
         "type-check": "tsc --noEmit",
-        "lint": "biome check ."
+        "lint": "biome check .",
+        "format": "biome format . --write"
     },
     "devDependencies": {
+        "@biomejs/biome": "^2.3.10",
         "typescript": "^5"
     }
 }

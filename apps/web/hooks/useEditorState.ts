@@ -82,7 +82,19 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     // Cursor and selection state
     const [cursor, setCursorState] = useState<CursorPosition>({ line: 1, column: 1 });
     const [selection, setSelectionState] = useState<Selection | null>(null);
+    const cursorRef = useRef<CursorPosition>({ line: 1, column: 1 });
+    const selectionRef = useRef<Selection | null>(null);
     const [isDirty, setIsDirty] = useState(false);
+
+    const updateCursor = useCallback((next: CursorPosition) => {
+        cursorRef.current = next;
+        setCursorState(next);
+    }, []);
+
+    const updateSelection = useCallback((next: Selection | null) => {
+        selectionRef.current = next;
+        setSelectionState(next);
+    }, []);
 
     // History for undo/redo
     const undoStackRef = useRef<HistoryEntry[]>([]);
@@ -148,8 +160,8 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         if (initialContent !== prevInitialContentRef.current && initialContent !== currentContent) {
             // Tab switch: initialContent changed AND differs from buffer
             bufferRef.current = new PieceTable(initialContent);
-            setCursorState({ line: 1, column: 1 });
-            setSelectionState(null);
+            updateCursor({ line: 1, column: 1 });
+            updateSelection(null);
             setIsDirty(false);
             undoStackRef.current = [];
             redoStackRef.current = [];
@@ -159,7 +171,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             // Content matches buffer but ref is stale (keystroke case), just update ref
             prevInitialContentRef.current = initialContent;
         }
-    }, [initialContent, triggerUpdate]);
+    }, [initialContent, triggerUpdate, updateCursor, updateSelection]);
 
     // Helper to validate and clamp cursor position
     const clampCursor = useCallback((pos: CursorPosition): CursorPosition => {
@@ -172,61 +184,64 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     }, []);
 
     // Push current state to undo stack
-    const pushToHistory = useCallback(
-        (force = false) => {
-            const now = Date.now();
-            const timeSinceLastEdit = now - lastEditTimeRef.current;
-            const shouldBatch = timeSinceLastEdit < HISTORY_BATCH_WINDOW && !force;
+    const pushToHistory = useCallback((force = false) => {
+        const now = Date.now();
+        const timeSinceLastEdit = now - lastEditTimeRef.current;
+        const shouldBatch = timeSinceLastEdit < HISTORY_BATCH_WINDOW && !force;
 
-            if (!shouldBatch) {
-                const entry: HistoryEntry = {
-                    snapshot: bufferRef.current.snapshot(),
-                    cursor,
-                    selection,
-                    timestamp: now,
-                };
+        if (!shouldBatch) {
+            const entry: HistoryEntry = {
+                snapshot: bufferRef.current.snapshot(),
+                cursor: cursorRef.current,
+                selection: selectionRef.current,
+                timestamp: now,
+            };
 
-                undoStackRef.current.push(entry);
+            undoStackRef.current.push(entry);
 
-                // Trim history if too large
-                if (undoStackRef.current.length > MAX_HISTORY_SIZE) {
-                    undoStackRef.current = undoStackRef.current.slice(-MAX_HISTORY_SIZE);
-                }
-
-                // Clear redo stack on new edit
-                redoStackRef.current = [];
+            // Trim history if too large
+            if (undoStackRef.current.length > MAX_HISTORY_SIZE) {
+                undoStackRef.current = undoStackRef.current.slice(-MAX_HISTORY_SIZE);
             }
 
-            lastEditTimeRef.current = now;
-        },
-        [cursor, selection],
-    );
+            // Clear redo stack on new edit
+            redoStackRef.current = [];
+        }
+
+        lastEditTimeRef.current = now;
+    }, []);
 
     // Insert text at cursor position
     const insertText = useCallback(
         (text: string) => {
             const buffer = bufferRef.current;
             const ops: Operation[] = [];
+            const currentCursor = cursorRef.current;
+            const currentSelection = selectionRef.current;
+            let insertPosition = currentCursor;
 
             // Determine changedFromLine before any edits
             const changedFromLine =
-                selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
+                currentSelection && !isSelectionEmpty(currentSelection)
+                    ? normalizeSelection(currentSelection).start.line
+                    : currentCursor.line;
 
             // Delete selection first if present
-            if (selection && !isSelectionEmpty(selection)) {
-                const normalized = normalizeSelection(selection);
+            if (currentSelection && !isSelectionEmpty(currentSelection)) {
+                const normalized = normalizeSelection(currentSelection);
                 const startOffset = buffer.positionToOffset(normalized.start);
                 const endOffset = buffer.positionToOffset(normalized.end);
                 if (endOffset > startOffset) {
                     ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
                 }
                 buffer.delete(startOffset, endOffset - startOffset);
-                setCursorState(normalized.start);
-                setSelectionState(null);
+                insertPosition = normalized.start;
+                updateCursor(normalized.start);
+                updateSelection(null);
             }
 
             // Insert text
-            const offset = buffer.positionToOffset(cursor);
+            const offset = buffer.positionToOffset(insertPosition);
             buffer.insert(offset, text);
             if (text.length > 0) {
                 ops.push({ type: "insert", pos: offset, text });
@@ -235,7 +250,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             // Move cursor after inserted text
             const newOffset = offset + text.length;
             const newCursor = buffer.offsetToPosition(newOffset);
-            setCursorState(newCursor);
+            updateCursor(newCursor);
             setIsDirty(true);
 
             // Store edit metadata for incremental tokenization
@@ -245,37 +260,41 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             emitOperations(ops);
             triggerUpdate();
         },
-        [cursor, selection, onChange, emitOperations, triggerUpdate, version],
+        [onChange, emitOperations, triggerUpdate, updateCursor, updateSelection, version],
     );
 
     // Delete backward (backspace)
     const deleteBackward = useCallback(() => {
         const buffer = bufferRef.current;
         const ops: Operation[] = [];
+        const currentCursor = cursorRef.current;
+        const currentSelection = selectionRef.current;
 
         // Determine changedFromLine before any edits
         const changedFromLine =
-            selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
+            currentSelection && !isSelectionEmpty(currentSelection)
+                ? normalizeSelection(currentSelection).start.line
+                : currentCursor.line;
 
-        if (selection && !isSelectionEmpty(selection)) {
+        if (currentSelection && !isSelectionEmpty(currentSelection)) {
             // Delete selection
-            const normalized = normalizeSelection(selection);
+            const normalized = normalizeSelection(currentSelection);
             const startOffset = buffer.positionToOffset(normalized.start);
             const endOffset = buffer.positionToOffset(normalized.end);
             if (endOffset > startOffset) {
                 ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
             }
             buffer.delete(startOffset, endOffset - startOffset);
-            setCursorState(normalized.start);
-            setSelectionState(null);
+            updateCursor(normalized.start);
+            updateSelection(null);
         } else {
             // Delete character before cursor
-            const offset = buffer.positionToOffset(cursor);
+            const offset = buffer.positionToOffset(currentCursor);
             if (offset > 0) {
                 buffer.delete(offset - 1, 1);
                 ops.push({ type: "delete", pos: offset - 1, len: 1 });
                 const newCursor = buffer.offsetToPosition(offset - 1);
-                setCursorState(newCursor);
+                updateCursor(newCursor);
             }
         }
 
@@ -287,31 +306,35 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         onChange?.(buffer.getText());
         emitOperations(ops);
         triggerUpdate();
-    }, [cursor, selection, onChange, emitOperations, triggerUpdate, version]);
+    }, [onChange, emitOperations, triggerUpdate, updateCursor, updateSelection, version]);
 
     // Delete forward (delete key)
     const deleteForward = useCallback(() => {
         const buffer = bufferRef.current;
         const ops: Operation[] = [];
+        const currentCursor = cursorRef.current;
+        const currentSelection = selectionRef.current;
 
         // Determine changedFromLine before any edits
         const changedFromLine =
-            selection && !isSelectionEmpty(selection) ? normalizeSelection(selection).start.line : cursor.line;
+            currentSelection && !isSelectionEmpty(currentSelection)
+                ? normalizeSelection(currentSelection).start.line
+                : currentCursor.line;
 
-        if (selection && !isSelectionEmpty(selection)) {
+        if (currentSelection && !isSelectionEmpty(currentSelection)) {
             // Delete selection
-            const normalized = normalizeSelection(selection);
+            const normalized = normalizeSelection(currentSelection);
             const startOffset = buffer.positionToOffset(normalized.start);
             const endOffset = buffer.positionToOffset(normalized.end);
             if (endOffset > startOffset) {
                 ops.push({ type: "delete", pos: startOffset, len: endOffset - startOffset });
             }
             buffer.delete(startOffset, endOffset - startOffset);
-            setCursorState(normalized.start);
-            setSelectionState(null);
+            updateCursor(normalized.start);
+            updateSelection(null);
         } else {
             // Delete character after cursor
-            const offset = buffer.positionToOffset(cursor);
+            const offset = buffer.positionToOffset(currentCursor);
             if (offset < buffer.getTotalLength()) {
                 buffer.delete(offset, 1);
                 ops.push({ type: "delete", pos: offset, len: 1 });
@@ -326,20 +349,22 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         onChange?.(buffer.getText());
         emitOperations(ops);
         triggerUpdate();
-    }, [cursor, selection, onChange, emitOperations, triggerUpdate, version]);
+    }, [onChange, emitOperations, triggerUpdate, updateCursor, updateSelection, version]);
 
     const applyRemoteOperations = useCallback(
         (ops: Operation[]) => {
             if (ops.length === 0) return;
 
             const buffer = bufferRef.current;
-            let cursorOffset = buffer.positionToOffset(cursor);
+            const currentCursor = cursorRef.current;
+            const currentSelection = selectionRef.current;
+            let cursorOffset = buffer.positionToOffset(currentCursor);
             let selectionAnchorOffset: number | null = null;
             let selectionActiveOffset: number | null = null;
 
-            if (selection && !isSelectionEmpty(selection)) {
-                selectionAnchorOffset = buffer.positionToOffset(selection.anchor);
-                selectionActiveOffset = buffer.positionToOffset(selection.active);
+            if (currentSelection && !isSelectionEmpty(currentSelection)) {
+                selectionAnchorOffset = buffer.positionToOffset(currentSelection.anchor);
+                selectionActiveOffset = buffer.positionToOffset(currentSelection.active);
             }
 
             let changedFromLine = Number.MAX_SAFE_INTEGER;
@@ -381,12 +406,12 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             }
 
             const newCursor = buffer.offsetToPosition(cursorOffset);
-            setCursorState(newCursor);
+            updateCursor(newCursor);
 
             if (selectionAnchorOffset !== null && selectionActiveOffset !== null) {
                 const anchor = buffer.offsetToPosition(selectionAnchorOffset);
                 const active = buffer.offsetToPosition(selectionActiveOffset);
-                setSelectionState({ anchor, active });
+                updateSelection({ anchor, active });
             }
 
             setIsDirty(true);
@@ -398,30 +423,32 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
             onChange?.(buffer.getText());
             triggerUpdate();
         },
-        [cursor, selection, onChange, triggerUpdate, version],
+        [onChange, triggerUpdate, updateCursor, updateSelection, version],
     );
 
     // Move cursor in a direction
     const moveCursor = useCallback(
         (direction: CursorDirection, extend = false) => {
             const buffer = bufferRef.current;
-            let newCursor = { ...cursor };
+            const currentCursor = cursorRef.current;
+            const currentSelection = selectionRef.current;
+            let newCursor = { ...currentCursor };
 
             switch (direction) {
                 case "left":
-                    if (cursor.column > 1) {
+                    if (currentCursor.column > 1) {
                         newCursor.column--;
-                    } else if (cursor.line > 1) {
+                    } else if (currentCursor.line > 1) {
                         newCursor.line--;
                         newCursor.column = buffer.getLine(newCursor.line).length + 1;
                     }
                     break;
 
                 case "right": {
-                    const lineLength = buffer.getLine(cursor.line).length;
-                    if (cursor.column <= lineLength) {
+                    const lineLength = buffer.getLine(currentCursor.line).length;
+                    if (currentCursor.column <= lineLength) {
                         newCursor.column++;
-                    } else if (cursor.line < buffer.getLineCount()) {
+                    } else if (currentCursor.line < buffer.getLineCount()) {
                         newCursor.line++;
                         newCursor.column = 1;
                     }
@@ -429,18 +456,18 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                 }
 
                 case "up":
-                    if (cursor.line > 1) {
+                    if (currentCursor.line > 1) {
                         newCursor.line--;
                         const lineLength = buffer.getLine(newCursor.line).length;
-                        newCursor.column = Math.min(cursor.column, lineLength + 1);
+                        newCursor.column = Math.min(currentCursor.column, lineLength + 1);
                     }
                     break;
 
                 case "down":
-                    if (cursor.line < buffer.getLineCount()) {
+                    if (currentCursor.line < buffer.getLineCount()) {
                         newCursor.line++;
                         const lineLength = buffer.getLine(newCursor.line).length;
-                        newCursor.column = Math.min(cursor.column, lineLength + 1);
+                        newCursor.column = Math.min(currentCursor.column, lineLength + 1);
                     }
                     break;
 
@@ -449,7 +476,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                     break;
 
                 case "lineEnd":
-                    newCursor.column = buffer.getLine(cursor.line).length + 1;
+                    newCursor.column = buffer.getLine(currentCursor.line).length + 1;
                     break;
 
                 case "documentStart":
@@ -466,24 +493,26 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                 }
 
                 case "wordLeft": {
-                    const lineContent = buffer.getLine(cursor.line);
-                    let col = cursor.column - 2; // 0-indexed
+                    const lineContent = buffer.getLine(currentCursor.line);
+                    let col = currentCursor.column - 2; // 0-indexed
 
                     if (col < 0) {
                         // Move to end of previous line
-                        if (cursor.line > 1) {
+                        if (currentCursor.line > 1) {
                             newCursor.line--;
                             newCursor.column = buffer.getLine(newCursor.line).length + 1;
                         }
                         break;
                     }
 
-                    // Skip spaces
-                    while (col >= 0 && /\s/.test(lineContent[col])) {
+                    const isWordChar = (char: string) => /\w/.test(char);
+
+                    // Skip non-word characters (spaces, punctuation)
+                    while (col >= 0 && !isWordChar(lineContent[col])) {
                         col--;
                     }
                     // Skip word characters
-                    while (col >= 0 && /\w/.test(lineContent[col])) {
+                    while (col >= 0 && isWordChar(lineContent[col])) {
                         col--;
                     }
 
@@ -492,25 +521,34 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                 }
 
                 case "wordRight": {
-                    const lineContent = buffer.getLine(cursor.line);
-                    let col = cursor.column - 1; // 0-indexed
+                    const lineContent = buffer.getLine(currentCursor.line);
+                    let col = currentCursor.column - 1; // 0-indexed
 
                     if (col >= lineContent.length) {
                         // Move to start of next line
-                        if (cursor.line < buffer.getLineCount()) {
+                        if (currentCursor.line < buffer.getLineCount()) {
                             newCursor.line++;
                             newCursor.column = 1;
                         }
                         break;
                     }
 
-                    // Skip word characters
-                    while (col < lineContent.length && /\w/.test(lineContent[col])) {
-                        col++;
-                    }
-                    // Skip spaces
-                    while (col < lineContent.length && /\s/.test(lineContent[col])) {
-                        col++;
+                    const isWordChar = (char: string) => /\w/.test(char);
+
+                    if (isWordChar(lineContent[col])) {
+                        // Move to end of current word
+                        while (col < lineContent.length && isWordChar(lineContent[col])) {
+                            col++;
+                        }
+                    } else {
+                        // Skip separators to next word
+                        while (col < lineContent.length && !isWordChar(lineContent[col])) {
+                            col++;
+                        }
+                        // Move to end of next word
+                        while (col < lineContent.length && isWordChar(lineContent[col])) {
+                            col++;
+                        }
                     }
 
                     newCursor.column = col + 1; // Back to 1-indexed
@@ -522,56 +560,67 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
 
             if (extend) {
                 // Extend selection
-                if (selection) {
-                    setSelectionState({ anchor: selection.anchor, active: newCursor });
+                if (currentSelection) {
+                    updateSelection({ anchor: currentSelection.anchor, active: newCursor });
                 } else {
-                    setSelectionState({ anchor: cursor, active: newCursor });
+                    updateSelection({ anchor: currentCursor, active: newCursor });
                 }
             } else {
                 // Clear selection
-                setSelectionState(null);
+                updateSelection(null);
             }
 
-            setCursorState(newCursor);
+            updateCursor(newCursor);
             triggerUpdate();
         },
-        [cursor, selection, clampCursor, triggerUpdate],
+        [clampCursor, triggerUpdate, updateCursor, updateSelection],
     );
 
     // Move cursor to a specific position
     const moveCursorTo = useCallback(
         (position: CursorPosition, extend = false) => {
             const newCursor = clampCursor(position);
+            const currentCursor = cursorRef.current;
+            const currentSelection = selectionRef.current;
 
             if (extend) {
-                if (selection) {
-                    setSelectionState({ anchor: selection.anchor, active: newCursor });
+                if (currentSelection) {
+                    updateSelection({ anchor: currentSelection.anchor, active: newCursor });
                 } else {
-                    setSelectionState({ anchor: cursor, active: newCursor });
+                    updateSelection({ anchor: currentCursor, active: newCursor });
                 }
             } else {
-                setSelectionState(null);
+                updateSelection(null);
             }
 
-            setCursorState(newCursor);
+            updateCursor(newCursor);
             triggerUpdate();
         },
-        [cursor, selection, clampCursor, triggerUpdate],
+        [clampCursor, triggerUpdate, updateCursor, updateSelection],
     );
 
     // Select all text
     const selectAll = useCallback(() => {
         const buffer = bufferRef.current;
         const lastLine = buffer.getLineCount();
-        const lastColumn = buffer.getLine(lastLine).length + 1;
+        const lastLineLength = buffer.getLine(lastLine).length;
 
-        setSelectionState({
+        if (lastLine === 1 && lastLineLength === 0) {
+            updateSelection(null);
+            updateCursor({ line: 1, column: 1 });
+            triggerUpdate();
+            return;
+        }
+
+        const lastColumn = lastLineLength + 1;
+
+        updateSelection({
             anchor: { line: 1, column: 1 },
             active: { line: lastLine, column: lastColumn },
         });
-        setCursorState({ line: lastLine, column: lastColumn });
+        updateCursor({ line: lastLine, column: lastColumn });
         triggerUpdate();
-    }, [triggerUpdate]);
+    }, [triggerUpdate, updateCursor, updateSelection]);
 
     // Undo
     const undo = useCallback(() => {
@@ -582,16 +631,16 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         // Save current state to redo stack
         redoStackRef.current.push({
             snapshot: bufferRef.current.snapshot(),
-            cursor,
-            selection,
+            cursor: cursorRef.current,
+            selection: selectionRef.current,
             timestamp: Date.now(),
         });
 
         // Restore from undo stack
         const entry = undoStackRef.current.pop()!;
         bufferRef.current.restore(entry.snapshot);
-        setCursorState(entry.cursor);
-        setSelectionState(entry.selection);
+        updateCursor(entry.cursor);
+        updateSelection(entry.selection);
         setIsDirty(true);
 
         // Full re-tokenization needed after undo
@@ -601,7 +650,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         onChange?.(nextContent);
         emitOperations(diffToOperations(prevContent, nextContent));
         triggerUpdate();
-    }, [cursor, selection, onChange, emitOperations, diffToOperations, triggerUpdate, version]);
+    }, [onChange, emitOperations, diffToOperations, triggerUpdate, updateCursor, updateSelection, version]);
 
     // Redo
     const redo = useCallback(() => {
@@ -612,16 +661,16 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         // Save current state to undo stack
         undoStackRef.current.push({
             snapshot: bufferRef.current.snapshot(),
-            cursor,
-            selection,
+            cursor: cursorRef.current,
+            selection: selectionRef.current,
             timestamp: Date.now(),
         });
 
         // Restore from redo stack
         const entry = redoStackRef.current.pop()!;
         bufferRef.current.restore(entry.snapshot);
-        setCursorState(entry.cursor);
-        setSelectionState(entry.selection);
+        updateCursor(entry.cursor);
+        updateSelection(entry.selection);
         setIsDirty(true);
 
         // Full re-tokenization needed after redo
@@ -631,11 +680,12 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
         onChange?.(nextContent);
         emitOperations(diffToOperations(prevContent, nextContent));
         triggerUpdate();
-    }, [cursor, selection, onChange, emitOperations, diffToOperations, triggerUpdate, version]);
+    }, [onChange, emitOperations, diffToOperations, triggerUpdate, updateCursor, updateSelection, version]);
 
     // Execute a command
     const executeCommand = useCallback(
         (command: EditorCommand) => {
+            const currentSelection = selectionRef.current;
             // Push to history before modifying content
             if (
                 ["insert", "deleteBackward", "deleteForward", "deleteSelection", "paste", "cut"].includes(command.type)
@@ -657,7 +707,7 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                     break;
 
                 case "deleteSelection":
-                    if (selection && !isSelectionEmpty(selection)) {
+                    if (currentSelection && !isSelectionEmpty(currentSelection)) {
                         deleteBackward(); // Reuse logic
                     }
                     break;
@@ -687,24 +737,13 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
                     break;
 
                 case "cut":
-                    if (selection && !isSelectionEmpty(selection)) {
+                    if (currentSelection && !isSelectionEmpty(currentSelection)) {
                         deleteBackward();
                     }
                     break;
             }
         },
-        [
-            pushToHistory,
-            insertText,
-            deleteBackward,
-            deleteForward,
-            moveCursor,
-            moveCursorTo,
-            selectAll,
-            undo,
-            redo,
-            selection,
-        ],
+        [pushToHistory, insertText, deleteBackward, deleteForward, moveCursor, moveCursorTo, selectAll, undo, redo],
     );
 
     // Get selected text
@@ -722,19 +761,26 @@ export function useEditorState(options: UseEditorStateOptions = {}): EditorState
     // Direct cursor setter (for mouse handling)
     const setCursor = useCallback(
         (position: CursorPosition) => {
-            setCursorState(clampCursor(position));
+            updateCursor(clampCursor(position));
             triggerUpdate();
         },
-        [clampCursor, triggerUpdate],
+        [clampCursor, triggerUpdate, updateCursor],
     );
 
     // Direct selection setter (for mouse handling)
     const setSelection = useCallback(
         (newSelection: Selection | null) => {
-            setSelectionState(newSelection);
+            if (newSelection) {
+                const clampedAnchor = clampCursor(newSelection.anchor);
+                const clampedActive = clampCursor(newSelection.active);
+                updateSelection({ anchor: clampedAnchor, active: clampedActive });
+                updateCursor(clampedActive);
+            } else {
+                updateSelection(null);
+            }
             triggerUpdate();
         },
-        [triggerUpdate],
+        [clampCursor, triggerUpdate, updateCursor, updateSelection],
     );
 
     // Build the API object

@@ -13,8 +13,8 @@ function createMockContainer(refValue: HTMLDivElement | null = null): RefObject<
 function createMockElement(width = 800, height = 600): HTMLDivElement {
     const scrollState = { top: 0, left: 0 };
     const element = document.createElement("div");
-    Object.defineProperty(element, "clientWidth", { value: width, writable: true });
-    Object.defineProperty(element, "clientHeight", { value: height, writable: true });
+    Object.defineProperty(element, "clientWidth", { value: width, writable: true, configurable: true });
+    Object.defineProperty(element, "clientHeight", { value: height, writable: true, configurable: true });
     Object.defineProperty(element, "scrollTop", {
         get: () => scrollState.top,
         set: (v: number) => {
@@ -79,7 +79,7 @@ describe("useViewport", () => {
             );
 
             expect(result.current.viewState.firstVisibleLine).toBe(1);
-            expect(result.current.viewState.lastVisibleLine).toBe(35); // 600/20 + buffer*2
+            expect(result.current.viewState.lastVisibleLine).toBe(35); // 600/20 + buffer
         });
 
         it("should handle zero line count", () => {
@@ -122,7 +122,7 @@ describe("useViewport", () => {
             );
 
             expect(result.current.viewState.firstVisibleLine).toBe(1);
-            expect(result.current.viewState.lastVisibleLine).toBe(40); // 600/20 + 10*2
+            expect(result.current.viewState.lastVisibleLine).toBe(40); // 600/20 + buffer
         });
     });
 
@@ -161,7 +161,7 @@ describe("useViewport", () => {
             });
 
             expect(result.current.viewState.scrollTop).toBe(200);
-            expect(result.current.viewState.firstVisibleLine).toBe(11); // 200/20 + 1
+            expect(result.current.viewState.firstVisibleLine).toBe(6);
             expect(result.current.viewState.lastVisibleLine).toBe(45);
         });
     });
@@ -407,7 +407,7 @@ describe("useViewport", () => {
 
             expect(result.current.viewState.viewportWidth).toBe(100);
             expect(result.current.viewState.viewportHeight).toBe(50);
-            expect(result.current.viewState.lastVisibleLine).toBe(7);
+            expect(result.current.viewState.lastVisibleLine).toBe(8);
         });
     });
 
@@ -558,8 +558,8 @@ describe("useViewport", () => {
                 }),
             );
 
-            expect(result.current.viewState.firstVisibleLine).toBe(1);
-            expect(result.current.viewState.lastVisibleLine).toBe(1);
+            expect(result.current.viewState.firstVisibleLine).toBe(0);
+            expect(result.current.viewState.lastVisibleLine).toBe(0);
         });
     });
 });

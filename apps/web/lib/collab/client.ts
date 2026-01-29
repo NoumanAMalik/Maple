@@ -40,7 +40,13 @@ export class CollabClient {
     private localVersion = 0;
 
     onWelcome:
-        | ((snapshot: string, version: number, presence: PresenceInfo[], snapshots: Snapshot[], isOwner: boolean) => void)
+        | ((
+              snapshot: string,
+              version: number,
+              presence: PresenceInfo[],
+              snapshots: Snapshot[],
+              isOwner: boolean,
+          ) => void)
         | null = null;
     onUserJoined: ((actor: Actor) => void) | null = null;
     onUserLeft: ((clientId: string) => void) | null = null;
@@ -51,7 +57,15 @@ export class CollabClient {
     onSnapshotCreated: ((snapshot: Snapshot) => void) | null = null;
     onSnapshotsList: ((snapshots: Snapshot[]) => void) | null = null;
     onSnapshotRestored: ((content: string, snapshotId: string, version: number) => void) | null = null;
-    onDiffResult: ((requestId: string, result: DiffResult, serverVersion: number, language: string, baseSnapshotId: string) => void) | null = null;
+    onDiffResult:
+        | ((
+              requestId: string,
+              result: DiffResult,
+              serverVersion: number,
+              language: string,
+              baseSnapshotId: string,
+          ) => void)
+        | null = null;
 
     constructor() {
         this.clientId = generateClientId();
@@ -211,7 +225,7 @@ export class CollabClient {
                     message.result,
                     message.serverVersion,
                     message.language,
-                    message.baseSnapshotId
+                    message.baseSnapshotId,
                 );
                 break;
         }

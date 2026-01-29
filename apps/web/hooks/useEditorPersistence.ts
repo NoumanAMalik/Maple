@@ -71,6 +71,8 @@ export function useEditorPersistence({
         return () => {
             // Cleanup: flush any pending saves
             debouncedSave.flush();
+            fs.storage.close();
+            fileSystemRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

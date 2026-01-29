@@ -184,6 +184,7 @@ export function FindReplaceSidebar({
                         type="button"
                         onClick={toggleShowReplace}
                         className="ml-auto rounded px-2 py-0.5 text-xs text-[var(--editor-line-number)] hover:bg-[var(--ui-hover)] hover:text-[var(--editor-fg)] transition-colors"
+                        aria-label={showReplace ? "Hide replace" : "Show replace"}
                     >
                         {showReplace ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     </button>

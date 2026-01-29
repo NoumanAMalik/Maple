@@ -76,6 +76,7 @@ describe("CommandPalette", () => {
     afterEach(() => {
         vi.clearAllMocks();
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     describe("Fuzzy Search Filtering", () => {
@@ -537,7 +538,7 @@ describe("CommandPalette", () => {
         it("should close on backdrop click", () => {
             render(<CommandPalette isOpen={true} onClose={onCloseMock} />);
 
-            const backdrop = screen.getByRole("dialog").parentElement as HTMLElement;
+            const backdrop = screen.getByRole("button", { name: /close command palette/i });
             fireEvent.click(backdrop);
 
             expect(onCloseMock).toHaveBeenCalledTimes(1);

@@ -113,7 +113,7 @@ describe("JavaScript Tokenizer", () => {
         });
 
         it("should tokenize template strings with expressions", () => {
-            const result = javascriptTokenizer.tokenizeLine("const x = `hello ${name}`;", INITIAL_STATE);
+            const result = javascriptTokenizer.tokenizeLine(`const x = \`hello ${"$"}{name}\`;`, INITIAL_STATE);
             const stringTokens = result.tokens.filter((t) => t.type === "string");
             expect(stringTokens.length).toBeGreaterThanOrEqual(2); // Before and after expression
         });
@@ -133,14 +133,14 @@ describe("JavaScript Tokenizer", () => {
         });
 
         it("should handle nested expressions in template strings", () => {
-            const result = javascriptTokenizer.tokenizeLine("const x = `a ${b + c} d`;", INITIAL_STATE);
+            const result = javascriptTokenizer.tokenizeLine(`const x = \`a ${"$"}{b + c} d\`;`, INITIAL_STATE);
             // Note: Due to implementation quirk, template strings with expressions end in template-string state
             expect(result.endState.kind).toBe("template-string");
             expect(result.endState.templateExpressionDepth).toBe(1);
         });
 
         it("should handle complex expressions in template strings", () => {
-            const result = javascriptTokenizer.tokenizeLine("const x = `result: ${foo(bar)}`;", INITIAL_STATE);
+            const result = javascriptTokenizer.tokenizeLine(`const x = \`result: ${"$"}{foo(bar)}\`;`, INITIAL_STATE);
             // Note: Due to implementation quirk, template strings with expressions end in template-string state
             expect(result.endState.kind).toBe("template-string");
             expect(result.endState.templateExpressionDepth).toBe(1);
@@ -438,7 +438,7 @@ describe("JavaScript Tokenizer", () => {
 
         it("should tokenize complex template string", () => {
             const result = javascriptTokenizer.tokenizeLine(
-                "const msg = `Hello ${user.name}, you have ${count} items`;",
+                `const msg = \`Hello ${"$"}{user.name}, you have ${"$"}{count} items\`;`,
                 INITIAL_STATE,
             );
             // Template strings with expressions end in template-string state
@@ -478,7 +478,7 @@ describe("JavaScript Tokenizer", () => {
         });
 
         it("should handle very long line", () => {
-            const longLine = "const x = " + "1 + ".repeat(1000) + "1;";
+            const longLine = `const x = ${"1 + ".repeat(1000)}1;`;
             const result = javascriptTokenizer.tokenizeLine(longLine, INITIAL_STATE);
             expect(result.tokens.length).toBeGreaterThan(0);
         });
