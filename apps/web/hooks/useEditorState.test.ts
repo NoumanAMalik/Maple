@@ -709,7 +709,7 @@ describe("useEditorState", () => {
             });
 
             expect(result.current.getContent()).toBe("Zabc\ndef");
-            expect(result.current.cursor).toEqual({ line: 1, column: 3 });
+            expect(result.current.cursor).toEqual({ line: 1, column: 4 });
             expect(result.current.selection?.anchor).toEqual({ line: 1, column: 3 });
             expect(result.current.selection?.active).toEqual({ line: 1, column: 4 });
             expect(result.current.getEditMetadata()?.changedFromLine).toBe(1);

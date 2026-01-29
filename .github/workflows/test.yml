@@ -56,16 +56,6 @@ jobs:
         env:
           NODE_ENV: test
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./apps/web/coverage/lcov.info
-          flags: unittests
-          name: codecov-maple
-          fail_ci_if_error: true
-          verbose: true
-
       - name: Generate coverage summary
         if: always()
         run: |
@@ -90,7 +80,7 @@ jobs:
             echo "| hooks/useEditorState.ts | 90% | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "| lib/storage/** | 80% | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📊 [Full Coverage Report](https://app.codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage report uploaded as the 'coverage-report' artifact for this run." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Comment PR with coverage
@@ -127,16 +117,8 @@ jobs:
             body += `| Functions | ${formatPct(total.functions.pct)} | 70% | ${getStatus(total.functions.pct, 70)} |\n`;
             body += `| Lines | ${formatPct(total.lines.pct)} | 70% | ${getStatus(total.lines.pct, 70)} |\n\n`;
 
-            body += '### Module-Specific Thresholds\n\n';
-            body += '| Module | Threshold | Status |\n';
-            body += '|--------|-----------|--------|\n';
-            body += '| `lib/tokenizer/**` | 90% | See Codecov for details |\n';
-            body += '| `lib/editor/pieceTable.ts` | 90% | See Codecov for details |\n';
-            body += '| `hooks/useEditorState.ts` | 90% | See Codecov for details |\n';
-            body += '| `lib/storage/**` | 80% | See Codecov for details |\n\n';
-
-            body += `📈 [View Full Report on Codecov](https://app.codecov.io/gh/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number})\n\n`;
-            body += `<sub>Coverage thresholds are enforced in \`vitest.config.ts\`. Tests will fail if thresholds are not met.</sub>`;
+            body += 'Coverage report is uploaded as the `coverage-report` artifact in this GitHub Actions run.\n\n';
+            body += '<sub>Coverage thresholds are enforced in `vitest.config.ts`. Tests will fail if thresholds are not met.</sub>';
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({

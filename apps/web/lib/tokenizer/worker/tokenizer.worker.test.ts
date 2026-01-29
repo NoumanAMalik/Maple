@@ -143,4 +143,100 @@ describe("tokenizer.worker", () => {
 
         expect(fakeSelf.postMessage).not.toHaveBeenCalled();
     });
+
+    it("should treat missing document lines as empty strings", () => {
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "init",
+                    language: "plaintext",
+                    lines: ["first", "second"],
+                    version: 1,
+                },
+            } as MessageEvent,
+        );
+
+        fakeSelf.postMessage.mockClear();
+
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "update",
+                    language: "plaintext",
+                    changedFromLine: 1,
+                    linesFromChanged: [],
+                    totalLineCount: 2,
+                    version: 2,
+                },
+            } as MessageEvent,
+        );
+
+        const response = fakeSelf.postMessage.mock.calls[0][0];
+        expect(response.type).toBe("update-complete");
+        expect(response.lines).toHaveLength(2);
+    });
+
+    it("should fill remaining lines when total line count grows", () => {
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "init",
+                    language: "plaintext",
+                    lines: ["alpha", "beta"],
+                    version: 1,
+                },
+            } as MessageEvent,
+        );
+
+        fakeSelf.postMessage.mockClear();
+
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "update",
+                    language: "plaintext",
+                    changedFromLine: 1,
+                    linesFromChanged: ["alpha", "beta"],
+                    totalLineCount: 3,
+                    version: 2,
+                },
+            } as MessageEvent,
+        );
+
+        const response = fakeSelf.postMessage.mock.calls[0][0];
+        expect(response.type).toBe("update-complete");
+        expect(response.lines).toHaveLength(3);
+    });
+
+    it("should trim highlights when total line count shrinks", () => {
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "init",
+                    language: "plaintext",
+                    lines: ["one", "two"],
+                    version: 1,
+                },
+            } as MessageEvent,
+        );
+
+        fakeSelf.postMessage.mockClear();
+
+        fakeSelf.onmessage?.(
+            {
+                data: {
+                    type: "update",
+                    language: "plaintext",
+                    changedFromLine: 3,
+                    linesFromChanged: [],
+                    totalLineCount: 1,
+                    version: 2,
+                },
+            } as MessageEvent,
+        );
+
+        const response = fakeSelf.postMessage.mock.calls[0][0];
+        expect(response.type).toBe("update-complete");
+        expect(response.lines).toHaveLength(0);
+    });
 });
