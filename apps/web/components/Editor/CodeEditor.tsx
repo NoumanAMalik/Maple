@@ -55,17 +55,20 @@ interface CodeEditorProps {
  * Provides a full-featured text editing experience with virtual scrolling,
  * cursor, selection, and keyboard handling.
  */
-export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEditor({
-    initialContent = "",
-    onChange,
-    onCursorChange,
-    config: configOverrides,
-    autoFocus = true,
-    searchMatches,
-    currentMatchIndex,
-    collaborators = [],
-    onOperations,
-}: CodeEditorProps, ref) {
+export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEditor(
+    {
+        initialContent = "",
+        onChange,
+        onCursorChange,
+        config: configOverrides,
+        autoFocus = true,
+        searchMatches,
+        currentMatchIndex,
+        collaborators = [],
+        onOperations,
+    }: CodeEditorProps,
+    ref,
+) {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const prevCursorRef = useRef<{ line: number; column: number } | null>(null);

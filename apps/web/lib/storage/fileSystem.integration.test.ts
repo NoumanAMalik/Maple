@@ -862,7 +862,7 @@ describe("FileSystem Integration Tests", () => {
         });
 
         it("should handle very long file names", async () => {
-            const longName = "a".repeat(255) + ".ts";
+            const longName = `${"a".repeat(255)}.ts`;
             const file = await fs.createFile("root", longName);
 
             expect(file.name).toBe(longName);

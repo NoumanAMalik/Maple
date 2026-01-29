@@ -164,7 +164,6 @@ export function FindReplace({
                         onChange={(e) => setFindQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Find"
-                        autoFocus
                         className="w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] pl-8 pr-2 py-1 text-sm text-[var(--editor-fg)] focus:border-[var(--ui-accent)] focus:outline-none"
                     />
                 </div>

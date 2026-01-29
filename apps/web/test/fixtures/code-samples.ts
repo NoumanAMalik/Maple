@@ -2,7 +2,7 @@ export const CODE_SAMPLES = {
     javascript: {
         simple: "const x = 1;",
         function: "function add(a, b) {\n  return a + b;\n}",
-        template: "`Hello ${name}!`",
+        template: `\`Hello ${"$"}{name}!\``,
         multilineComment: "/*\n * Block comment\n */",
         complex: `import React from 'react';
 

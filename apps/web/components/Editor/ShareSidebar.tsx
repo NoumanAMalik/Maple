@@ -435,7 +435,6 @@ export const ShareSidebar = memo(function ShareSidebar({
                             onChange={(e) => setSaveMessage(e.target.value)}
                             placeholder="Description (optional)"
                             className="mb-3 w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-2.5 py-1.5 text-sm text-[var(--editor-fg)] outline-none focus:border-[var(--ui-accent)]"
-                            autoFocus
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     onSaveSnapshot(saveMessage || undefined);

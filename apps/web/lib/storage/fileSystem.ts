@@ -229,7 +229,12 @@ export class FileSystem implements FileSystemOperations {
         return allFiles.find((file) => file.path === path) ?? null;
     }
 
-    async saveTabState(tabOrder: string[], activeFileId: string | null, tabs?: PersistedTab[], activeTabId?: string | null): Promise<void> {
+    async saveTabState(
+        tabOrder: string[],
+        activeFileId: string | null,
+        tabs?: PersistedTab[],
+        activeTabId?: string | null,
+    ): Promise<void> {
         const state: PersistedTabState = tabs
             ? {
                   id: "__tab_state__",
