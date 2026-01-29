@@ -155,6 +155,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                         executeCommand(flatCommands[selectedIndex]);
                     }
                     break;
+                case "Escape":
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClose();
+                    break;
             }
         },
         [onClose, flatCommands, selectedIndex, executeCommand],
@@ -163,25 +168,27 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     if (!shouldRender) return null;
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
-            onClick={onClose}
-            onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                    onClose();
-                }
-            }}
-        >
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
             {/* Backdrop */}
-            <div className={`absolute inset-0 bg-black/30 ${isClosing ? "animate-fadeOut" : "animate-fadeIn"}`} />
+            <button
+                type="button"
+                aria-label="Close command palette"
+                className={`absolute inset-0 bg-black/30 ${isClosing ? "animate-fadeOut" : "animate-fadeIn"}`}
+                onClick={onClose}
+            />
 
             {/* Command Palette Modal */}
             <div
                 className={`relative w-full max-w-lg overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] shadow-2xl ${isClosing ? "animate-scaleOut" : "animate-scaleIn"}`}
-                onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Command palette"
+                onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                        e.preventDefault();
+                        onClose();
+                    }
+                }}
             >
                 {/* Search input */}
                 <div className="flex items-center border-b border-[var(--ui-border)] p-3">

@@ -5,6 +5,7 @@
     "": {
       "name": "maple",
       "devDependencies": {
+        "@biomejs/biome": "^2.3.10",
         "turbo": "^2",
       },
     },
