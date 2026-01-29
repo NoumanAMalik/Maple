@@ -549,7 +549,7 @@ describe("Python Tokenizer", () => {
         it("should tokenize bitwise operators", () => {
             const result = pythonTokenizer.tokenizeLine("a & b | c ^ d ~ e << f >> g", INITIAL_STATE);
             const operators = result.tokens.filter((t) => t.type === "operator");
-            expect(operators.length).toBeGreaterThanOrEqual(7);
+            expect(operators.length).toBeGreaterThanOrEqual(6);
         });
 
         it("should tokenize logical operators", () => {

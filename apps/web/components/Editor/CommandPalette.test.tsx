@@ -76,6 +76,7 @@ describe("CommandPalette", () => {
     afterEach(() => {
         vi.clearAllMocks();
         vi.clearAllTimers();
+        vi.useRealTimers();
     });
 
     describe("Fuzzy Search Filtering", () => {

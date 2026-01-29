@@ -92,6 +92,21 @@ export class FileSystem implements FileSystemOperations {
             throw new Error(`Invalid parent: ${newParentId}`);
         }
 
+        if (node.type === "directory") {
+            if (nodeId === newParentId) {
+                throw new Error("Cannot move a directory into itself");
+            }
+
+            let ancestor: FileNode | null = newParent;
+            while (ancestor) {
+                if (ancestor.id === nodeId) {
+                    throw new Error("Cannot move a directory into its child");
+                }
+                if (!ancestor.parentId) break;
+                ancestor = (await this.storage.get<FileNode>("files", ancestor.parentId)) ?? null;
+            }
+        }
+
         // Calculate new path
         const newPath = newParent.path === "/" ? `/${node.name}` : `${newParent.path}/${node.name}`;
 
