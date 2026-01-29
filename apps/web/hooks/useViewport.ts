@@ -68,6 +68,17 @@ export function useViewport({
         };
     }, [containerRef]);
 
+    // Ensure dimensions stay in sync on rerenders (e.g., test updates or missed observers)
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        setDimensions((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+    });
+
     // Calculate visible line range
     const visibleRange = useMemo(() => {
         return getVisibleLineRange(scrollTop, dimensions.height, lineHeight, lineCount, buffer);

@@ -151,9 +151,13 @@ export function getVisibleLineRange(
     lineCount: number,
     buffer = 5,
 ): { firstVisibleLine: number; lastVisibleLine: number } {
+    if (lineCount <= 0 || lineHeight <= 0) {
+        return { firstVisibleLine: 0, lastVisibleLine: 0 };
+    }
+
     const firstVisible = Math.floor(scrollTop / lineHeight) + 1;
     const visibleLines = Math.ceil(viewportHeight / lineHeight);
-    const lastVisible = firstVisible + visibleLines;
+    const lastVisible = firstVisible + visibleLines - 1;
 
     return {
         firstVisibleLine: Math.max(1, firstVisible - buffer),

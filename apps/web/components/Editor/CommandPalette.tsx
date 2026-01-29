@@ -176,8 +176,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             <div className={`absolute inset-0 bg-black/30 ${isClosing ? "animate-fadeOut" : "animate-fadeIn"}`} />
 
             {/* Command Palette Modal */}
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: Modal content needs click isolation */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Keyboard events handled by input */}
             <div
                 className={`relative w-full max-w-lg overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] shadow-2xl ${isClosing ? "animate-scaleOut" : "animate-scaleIn"}`}
                 onClick={(e) => e.stopPropagation()}

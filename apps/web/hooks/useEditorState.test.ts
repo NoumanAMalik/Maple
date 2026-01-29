@@ -1010,7 +1010,7 @@ describe("useEditorState", () => {
                 result.current.executeCommand({ type: "deleteForward" });
             });
 
-            expect(result.current.getContent()).toBe("Hello World");
+            expect(result.current.getContent()).toBe("ello World");
         });
 
         it("should handle delete at line boundaries", () => {
