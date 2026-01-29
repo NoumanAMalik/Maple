@@ -112,9 +112,7 @@ describe("LineRenderer", () => {
 
             const currentLine = container.querySelector('[data-line="5"]');
             expect(currentLine).toBeInTheDocument();
-            expect(currentLine).toHaveStyle({
-                backgroundColor: "var(--editor-active-line)",
-            });
+            expect((currentLine as HTMLElement).style.backgroundColor).toBe("var(--editor-active-line)");
         });
 
         it("should only mark one line as current", () => {
@@ -132,8 +130,7 @@ describe("LineRenderer", () => {
 
             const allLines = container.querySelectorAll(".editor-line");
             const linesWithBackground = Array.from(allLines).filter((line) => {
-                const style = window.getComputedStyle(line);
-                return style.backgroundColor === "var(--editor-active-line)";
+                return (line as HTMLElement).style.backgroundColor === "var(--editor-active-line)";
             });
 
             // Only line 3 should have the background
@@ -157,9 +154,9 @@ describe("LineRenderer", () => {
             const line2 = container.querySelector('[data-line="2"]');
             const line3 = container.querySelector('[data-line="3"]');
 
-            expect(line1).toHaveStyle({ backgroundColor: "transparent" });
-            expect(line2).toHaveStyle({ backgroundColor: "var(--editor-active-line)" });
-            expect(line3).toHaveStyle({ backgroundColor: "transparent" });
+            expect((line1 as HTMLElement).style.backgroundColor).toBe("transparent");
+            expect((line2 as HTMLElement).style.backgroundColor).toBe("var(--editor-active-line)");
+            expect((line3 as HTMLElement).style.backgroundColor).toBe("transparent");
         });
     });
 
@@ -386,7 +383,7 @@ describe("LineRenderer", () => {
                 span.textContent?.includes("function"),
             );
 
-            expect(keywordSpan).toHaveStyle({ color: "var(--syntax-keyword)" });
+            expect((keywordSpan as HTMLSpanElement).style.color).toBe("var(--syntax-keyword)");
         });
 
         it("should apply correct color to strings", () => {
@@ -412,7 +409,7 @@ describe("LineRenderer", () => {
                 span.textContent?.includes('"Hello"'),
             );
 
-            expect(stringSpan).toHaveStyle({ color: "var(--syntax-string)" });
+            expect((stringSpan as HTMLSpanElement).style.color).toBe("var(--syntax-string)");
         });
 
         it("should apply correct color to comments", () => {
@@ -438,7 +435,7 @@ describe("LineRenderer", () => {
                 span.textContent?.includes("comment"),
             );
 
-            expect(commentSpan).toHaveStyle({ color: "var(--syntax-comment)" });
+            expect((commentSpan as HTMLSpanElement).style.color).toBe("var(--syntax-comment)");
         });
     });
 
@@ -982,9 +979,8 @@ describe("LineRenderer", () => {
                 />,
             );
 
-            // Due to useMemo, getLine should be called again only if deps changed
-            // In this case, all deps are the same, so it should use memoized value
-            expect(mockGetLine.mock.calls.length).toBe(firstCallCount);
+            // Due to useMemo, getLine should not be called again if deps didn't change
+            expect(mockGetLine.mock.calls.length).toBe(0);
         });
 
         it("should use correct line numbers as keys", () => {

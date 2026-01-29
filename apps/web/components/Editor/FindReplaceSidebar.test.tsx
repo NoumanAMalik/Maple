@@ -521,18 +521,9 @@ describe("FindReplaceSidebar", () => {
 
             render(<FindReplaceSidebar {...props} />);
 
-            // Find the toggle button (ChevronRight when closed)
-            const buttons = screen.getAllByRole("button");
-            const toggleButton = buttons.find((btn) => {
-                const svg = btn.querySelector("svg");
-                return svg !== null && btn.textContent === "";
-            });
-
-            expect(toggleButton).toBeDefined();
-            if (toggleButton) {
-                fireEvent.click(toggleButton);
-                expect(toggleShowReplace).toHaveBeenCalledTimes(1);
-            }
+            const toggleButton = screen.getByLabelText("Show replace");
+            fireEvent.click(toggleButton);
+            expect(toggleShowReplace).toHaveBeenCalledTimes(1);
         });
 
         it("should display ChevronDown icon when replace is shown", () => {

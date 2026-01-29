@@ -141,9 +141,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             switch (e.key) {
-                case "Escape":
-                    onClose();
-                    break;
                 case "ArrowDown":
                     e.preventDefault();
                     setSelectedIndex((prev) => Math.min(prev + 1, flatCommands.length - 1));
@@ -174,9 +171,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                     onClose();
                 }
             }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Command palette"
         >
             {/* Backdrop */}
             <div className={`absolute inset-0 bg-black/30 ${isClosing ? "animate-fadeOut" : "animate-fadeIn"}`} />
@@ -187,6 +181,9 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             <div
                 className={`relative w-full max-w-lg overflow-hidden rounded-lg border border-[var(--ui-border)] bg-[var(--ui-sidebar-bg)] shadow-2xl ${isClosing ? "animate-scaleOut" : "animate-scaleIn"}`}
                 onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Command palette"
             >
                 {/* Search input */}
                 <div className="flex items-center border-b border-[var(--ui-border)] p-3">
@@ -209,7 +206,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                     {Object.entries(groupedCommands).map(([category, commands]) => (
                         <div key={category} className="mb-2">
                             <div className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-[var(--ui-accent)]">
-                                {category}
+                                {category.toUpperCase()}
                             </div>
                             {commands.map((command) => {
                                 const index = flatCommands.indexOf(command);

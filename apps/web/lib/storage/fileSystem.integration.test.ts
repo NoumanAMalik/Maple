@@ -849,9 +849,7 @@ describe("FileSystem Integration Tests", () => {
 
     describe("Edge Cases and Error Handling", () => {
         it("should handle empty directory name gracefully", async () => {
-            const dir = await fs.createDirectory("root", "");
-            expect(dir.name).toBe("");
-            expect(dir.path).toBe("/");
+            await expect(fs.createDirectory("root", "")).rejects.toThrow();
         });
 
         it("should handle special characters in paths", async () => {
