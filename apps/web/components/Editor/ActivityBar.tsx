@@ -30,7 +30,10 @@ import {
     ChevronUp,
     ChevronDown,
     Link2,
+    User as UserIcon,
 } from "lucide-react";
+import { AccountModal } from "@/components/Editor/AccountModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityBarProps {
     isExplorerOpen: boolean;
@@ -337,6 +340,8 @@ export function ActivityBar({
     isInSession,
 }: ActivityBarProps) {
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showAccount, setShowAccount] = useState(false);
+    const { status, user, avatarUrl } = useAuth();
 
     return (
         <>
@@ -402,6 +407,28 @@ export function ActivityBar({
 
                 <div className="flex-1" />
 
+                <Tooltip content={status === "authenticated" ? "Account" : "Sign in"} side="left">
+                    <button
+                        type="button"
+                        onClick={() => setShowAccount(true)}
+                        aria-label="Account"
+                        className="relative flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]"
+                    >
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={user?.displayName ?? "Account"}
+                                className="h-7 w-7 rounded-full object-cover"
+                            />
+                        ) : (
+                            <UserIcon className="h-5 w-5" />
+                        )}
+                        {status === "authenticated" && (
+                            <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[var(--level-success)]" />
+                        )}
+                    </button>
+                </Tooltip>
+
                 <Tooltip content="Keyboard Shortcuts" side="left">
                     <button
                         type="button"
@@ -447,6 +474,8 @@ export function ActivityBar({
                     ))}
                 </div>
             </Modal>
+
+            <AccountModal isOpen={showAccount} onClose={() => setShowAccount(false)} />
         </>
     );
 }

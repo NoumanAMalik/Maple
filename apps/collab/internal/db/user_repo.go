@@ -79,3 +79,18 @@ func (r *UserRepo) GetByID(ctx context.Context, id string) (*models.User, error)
 
 	return &user, nil
 }
+
+func (r *UserRepo) UpdatePassword(ctx context.Context, id, passwordHash string) error {
+	commandTag, err := r.pool.Exec(ctx, `
+		UPDATE users
+		SET password_hash = $1, updated_at = NOW()
+		WHERE id = $2
+	`, passwordHash, id)
+	if err != nil {
+		return err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

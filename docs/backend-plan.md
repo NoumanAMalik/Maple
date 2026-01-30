@@ -422,6 +422,7 @@ type Claims struct {
 | POST | `/v1/auth/login` | Login, receive tokens |
 | POST | `/v1/auth/refresh` | Refresh access token |
 | POST | `/v1/auth/logout` | Invalidate refresh token |
+| POST | `/v1/auth/password` | Change password (requires auth) |
 | GET | `/v1/me` | Get current user profile |
 
 #### Documents

@@ -49,6 +49,11 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type changePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
 type UserResponse struct {
 	ID          string `json:"id"`
 	Email       string `json:"email"`
@@ -159,6 +164,57 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, authResp)
+}
+
+func (h *AuthHandlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "Missing user")
+		return
+	}
+
+	var req changePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid JSON body")
+		return
+	}
+
+	if len(strings.TrimSpace(req.NewPassword)) < minPasswordLength {
+		writeError(w, http.StatusBadRequest, "invalid_password", "Password is too short")
+		return
+	}
+
+	user, err := h.users.GetByID(r.Context(), userID)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "User not found")
+		return
+	}
+
+	valid, err := h.hasher.Verify(req.CurrentPassword, user.PasswordHash)
+	if err != nil {
+		h.logger.Error("password verification failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "server_error", "Could not update password")
+		return
+	}
+	if !valid {
+		writeError(w, http.StatusUnauthorized, "invalid_credentials", "Invalid credentials")
+		return
+	}
+
+	passwordHash, err := h.hasher.Hash(req.NewPassword)
+	if err != nil {
+		h.logger.Error("password hash failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "server_error", "Could not update password")
+		return
+	}
+
+	if err := h.users.UpdatePassword(r.Context(), user.ID, passwordHash); err != nil {
+		h.logger.Error("password update failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "server_error", "Could not update password")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *AuthHandlers) Refresh(w http.ResponseWriter, r *http.Request) {

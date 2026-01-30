@@ -83,6 +83,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, logger *slog.Logger, dbP
 			r.Post("/login", authHandlers.Login)
 			r.Post("/refresh", authHandlers.Refresh)
 			r.Post("/logout", authHandlers.Logout)
+			r.With(AuthMiddleware(tokenManager, logger)).Post("/password", authHandlers.ChangePassword)
 		})
 
 		r.With(AuthMiddleware(tokenManager, logger)).Get("/me", authHandlers.Me)
