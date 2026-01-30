@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const INPUT_CLASS =
-    "w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-3 py-2 text-sm text-[var(--editor-fg)] outline-none transition-colors focus:border-[var(--ui-accent)]";
+    "w-full rounded border border-[var(--ui-border)] bg-[var(--editor-bg)] px-3 py-2 text-sm text-[var(--editor-fg)] placeholder:text-[var(--editor-line-number)] placeholder:opacity-70 outline-none transition-colors focus:border-[var(--ui-accent)]";
 const LABEL_CLASS = "text-xs text-[var(--editor-line-number)]";
+const HELPER_CLASS = "text-xs text-[var(--editor-line-number)]";
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -341,148 +342,218 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="flex gap-2 rounded-lg bg-[var(--ui-active)] p-1">
+                        <div className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-hover)]/30 p-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-[var(--ui-border)] bg-[var(--ui-active)]">
+                                        <UserIcon className="h-5 w-5 text-[var(--ui-accent)]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-[var(--editor-fg)]">
+                                            Maple account
+                                        </p>
+                                        <p className="text-xs text-[var(--editor-line-number)]">
+                                            Optional, fast, and lightweight.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="hidden items-center gap-2 text-xs text-[var(--editor-line-number)] sm:flex">
+                                    <ShieldCheck className="h-4 w-4 text-[var(--ui-accent)]" />
+                                    No account required to edit.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 rounded-full border border-[var(--ui-border)] bg-[var(--ui-active)] p-1">
                             <button
                                 type="button"
                                 onClick={() => setMode("signin")}
                                 className={cn(
-                                    "flex-1 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+                                    "flex-1 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
                                     mode === "signin"
                                         ? "bg-[var(--ui-hover)] text-[var(--editor-fg)]"
                                         : "text-[var(--editor-line-number)] hover:text-[var(--editor-fg)]",
                                 )}
                             >
-                                Sign in
+                                <span className="inline-flex items-center justify-center gap-2">
+                                    <UserIcon className="h-3.5 w-3.5" />
+                                    Sign in
+                                </span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setMode("signup")}
                                 className={cn(
-                                    "flex-1 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+                                    "flex-1 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
                                     mode === "signup"
                                         ? "bg-[var(--ui-hover)] text-[var(--editor-fg)]"
                                         : "text-[var(--editor-line-number)] hover:text-[var(--editor-fg)]",
                                 )}
                             >
-                                Create account
+                                <span className="inline-flex items-center justify-center gap-2">
+                                    <UserPlus className="h-3.5 w-3.5" />
+                                    Create account
+                                </span>
                             </button>
                         </div>
 
-                        {mode === "signin" ? (
-                            <form className="space-y-4" onSubmit={handleSignIn}>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signin-email">
-                                        Email
-                                    </label>
-                                    <input
-                                        id="signin-email"
-                                        type="email"
-                                        value={signInEmail}
-                                        onChange={(event) => setSignInEmail(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="email"
-                                    />
+                        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                            {mode === "signin" ? (
+                                <form className="space-y-4" onSubmit={handleSignIn}>
+                                    <div className="space-y-1.5">
+                                        <label className={LABEL_CLASS} htmlFor="signin-email">
+                                            Email
+                                        </label>
+                                        <input
+                                            id="signin-email"
+                                            type="email"
+                                            value={signInEmail}
+                                            onChange={(event) => setSignInEmail(event.target.value)}
+                                            className={INPUT_CLASS}
+                                            autoComplete="email"
+                                            placeholder="you@maple.dev"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className={LABEL_CLASS} htmlFor="signin-password">
+                                            Password
+                                        </label>
+                                        <input
+                                            id="signin-password"
+                                            type="password"
+                                            value={signInPassword}
+                                            onChange={(event) => setSignInPassword(event.target.value)}
+                                            className={INPUT_CLASS}
+                                            autoComplete="current-password"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={!canSubmit || busy}
+                                        className={cn(
+                                            "w-full rounded-md border border-[var(--ui-accent)] bg-[var(--ui-accent)] px-3 py-2 text-sm font-semibold text-[var(--editor-bg)] transition-colors",
+                                            !canSubmit || busy ? "opacity-60" : "hover:bg-[var(--ui-accent-hover)]",
+                                        )}
+                                    >
+                                        Sign in
+                                    </button>
+                                    <p className={HELPER_CLASS}>
+                                        Sign in is optional. You can keep using Maple without an account.
+                                    </p>
+                                </form>
+                            ) : (
+                                <form className="space-y-4" onSubmit={handleSignUp}>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
+                                            <label className={LABEL_CLASS} htmlFor="signup-name">
+                                                Display name (optional)
+                                            </label>
+                                            <input
+                                                id="signup-name"
+                                                type="text"
+                                                value={signUpName}
+                                                onChange={(event) => setSignUpName(event.target.value)}
+                                                className={INPUT_CLASS}
+                                                autoComplete="name"
+                                                placeholder="Maple"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className={LABEL_CLASS} htmlFor="signup-email">
+                                                Email
+                                            </label>
+                                            <input
+                                                id="signup-email"
+                                                type="email"
+                                                value={signUpEmail}
+                                                onChange={(event) => setSignUpEmail(event.target.value)}
+                                                className={INPUT_CLASS}
+                                                autoComplete="email"
+                                                placeholder="you@maple.dev"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
+                                            <label className={LABEL_CLASS} htmlFor="signup-password">
+                                                Password
+                                            </label>
+                                            <input
+                                                id="signup-password"
+                                                type="password"
+                                                value={signUpPassword}
+                                                onChange={(event) => setSignUpPassword(event.target.value)}
+                                                className={INPUT_CLASS}
+                                                autoComplete="new-password"
+                                            />
+                                            <p className={HELPER_CLASS}>Minimum 8 characters.</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className={LABEL_CLASS} htmlFor="signup-confirm">
+                                                Confirm password
+                                            </label>
+                                            <input
+                                                id="signup-confirm"
+                                                type="password"
+                                                value={signUpConfirm}
+                                                onChange={(event) => setSignUpConfirm(event.target.value)}
+                                                className={INPUT_CLASS}
+                                                autoComplete="new-password"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={!canSubmit || busy}
+                                        className={cn(
+                                            "w-full rounded-md border border-[var(--ui-accent)] bg-[var(--ui-accent)] px-3 py-2 text-sm font-semibold text-[var(--editor-bg)] transition-colors",
+                                            !canSubmit || busy ? "opacity-60" : "hover:bg-[var(--ui-accent-hover)]",
+                                        )}
+                                    >
+                                        <span className="inline-flex items-center justify-center gap-2">
+                                            <UserPlus className="h-4 w-4" />
+                                            Create account
+                                        </span>
+                                    </button>
+                                    <p className={HELPER_CLASS}>
+                                        Accounts are optional. Create one to sync identity across sessions.
+                                    </p>
+                                </form>
+                            )}
+
+                            <div className="space-y-4 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-hover)]/30 p-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--editor-line-number)]">
+                                    <ShieldCheck className="h-4 w-4 text-[var(--ui-accent)]" />
+                                    Why sign in
                                 </div>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signin-password">
-                                        Password
-                                    </label>
-                                    <input
-                                        id="signin-password"
-                                        type="password"
-                                        value={signInPassword}
-                                        onChange={(event) => setSignInPassword(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="current-password"
-                                    />
+                                <div className="space-y-3 text-sm text-[var(--editor-line-number)]">
+                                    <div className="flex items-start gap-2">
+                                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--ui-accent)]" />
+                                        <span>
+                                            <span className="text-[var(--editor-fg)]">Identity across sessions.</span>{" "}
+                                            Keep your display name and avatar consistent.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--ui-accent)]" />
+                                        <span>
+                                            <span className="text-[var(--editor-fg)]">Quick profile updates.</span> Edit
+                                            your name and avatar anytime.
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--ui-accent)]" />
+                                        <span>
+                                            <span className="text-[var(--editor-fg)]">Optional by design.</span> Maple
+                                            stays fast even without an account.
+                                        </span>
+                                    </div>
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={!canSubmit || busy}
-                                    className={cn(
-                                        "w-full rounded-md border border-[var(--ui-accent)] bg-[var(--ui-accent)] px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--editor-bg)] transition-colors",
-                                        !canSubmit || busy ? "opacity-60" : "hover:bg-[var(--ui-accent-hover)]",
-                                    )}
-                                >
-                                    Sign in
-                                </button>
-                                <p className="text-xs text-[var(--editor-line-number)]">
-                                    Sign in is optional. You can keep using Maple without an account.
-                                </p>
-                            </form>
-                        ) : (
-                            <form className="space-y-4" onSubmit={handleSignUp}>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signup-name">
-                                        Display name
-                                    </label>
-                                    <input
-                                        id="signup-name"
-                                        type="text"
-                                        value={signUpName}
-                                        onChange={(event) => setSignUpName(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="name"
-                                        placeholder="Maple"
-                                    />
+                                <div className="rounded-md border border-[var(--ui-border)] bg-[var(--ui-active)] px-3 py-2 text-xs text-[var(--editor-line-number)]">
+                                    You can close this anytime and keep editing.
                                 </div>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signup-email">
-                                        Email
-                                    </label>
-                                    <input
-                                        id="signup-email"
-                                        type="email"
-                                        value={signUpEmail}
-                                        onChange={(event) => setSignUpEmail(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="email"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signup-password">
-                                        Password (min 8 chars)
-                                    </label>
-                                    <input
-                                        id="signup-password"
-                                        type="password"
-                                        value={signUpPassword}
-                                        onChange={(event) => setSignUpPassword(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className={LABEL_CLASS} htmlFor="signup-confirm">
-                                        Confirm password
-                                    </label>
-                                    <input
-                                        id="signup-confirm"
-                                        type="password"
-                                        value={signUpConfirm}
-                                        onChange={(event) => setSignUpConfirm(event.target.value)}
-                                        className={INPUT_CLASS}
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={!canSubmit || busy}
-                                    className={cn(
-                                        "w-full rounded-md border border-[var(--ui-accent)] bg-[var(--ui-accent)] px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--editor-bg)] transition-colors",
-                                        !canSubmit || busy ? "opacity-60" : "hover:bg-[var(--ui-accent-hover)]",
-                                    )}
-                                >
-                                    <span className="inline-flex items-center justify-center gap-2">
-                                        <UserPlus className="h-4 w-4" />
-                                        Create account
-                                    </span>
-                                </button>
-                                <p className="text-xs text-[var(--editor-line-number)]">
-                                    Accounts are optional. Create one to sync identity across sessions.
-                                </p>
-                            </form>
-                        )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

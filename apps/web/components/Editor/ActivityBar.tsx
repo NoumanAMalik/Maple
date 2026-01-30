@@ -407,6 +407,19 @@ export function ActivityBar({
 
                 <div className="flex-1" />
 
+                <Tooltip content="Keyboard Shortcuts" side="left">
+                    <button
+                        type="button"
+                        onClick={() => setShowShortcuts(true)}
+                        aria-label="Show keyboard shortcuts"
+                        className="flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]"
+                    >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+                            <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
+                        </svg>
+                    </button>
+                </Tooltip>
+
                 <Tooltip content={status === "authenticated" ? "Account" : "Sign in"} side="left">
                     <button
                         type="button"
@@ -426,19 +439,6 @@ export function ActivityBar({
                         {status === "authenticated" && (
                             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[var(--level-success)]" />
                         )}
-                    </button>
-                </Tooltip>
-
-                <Tooltip content="Keyboard Shortcuts" side="left">
-                    <button
-                        type="button"
-                        onClick={() => setShowShortcuts(true)}
-                        aria-label="Show keyboard shortcuts"
-                        className="flex h-10 w-10 items-center justify-center rounded-md text-[var(--editor-fg)] transition-colors duration-200 hover:bg-[var(--ui-hover)]"
-                    >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-                            <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z" />
-                        </svg>
                     </button>
                 </Tooltip>
             </div>
