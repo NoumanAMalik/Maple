@@ -35,7 +35,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, logger *slog.Logger, dbP
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
@@ -53,6 +53,10 @@ func NewRouter(ctx context.Context, cfg *config.Config, logger *slog.Logger, dbP
 	userRepo := db.NewUserRepo(dbPool)
 	sessionRepo := db.NewSessionRepo(dbPool)
 	authHandlers := NewAuthHandlers(userRepo, sessionRepo, tokenManager, auth.DefaultPasswordHasher(), cfg, logger)
+	docRepo := db.NewDocumentRepo(dbPool)
+	opRepo := db.NewOpRepo(dbPool)
+	snapshotRepo := db.NewSnapshotRepo(dbPool)
+	docHandlers := NewDocumentHandlers(docRepo, opRepo, snapshotRepo, logger)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -87,6 +91,15 @@ func NewRouter(ctx context.Context, cfg *config.Config, logger *slog.Logger, dbP
 		})
 
 		r.With(AuthMiddleware(tokenManager, logger)).Get("/me", authHandlers.Me)
+
+		r.With(AuthMiddleware(tokenManager, logger)).Route("/docs", func(r chi.Router) {
+			r.Post("/", docHandlers.CreateDocument)
+			r.Get("/", docHandlers.ListDocuments)
+			r.Get("/{id}", docHandlers.GetDocument)
+			r.Get("/{id}/content", docHandlers.GetDocumentContent)
+			r.Patch("/{id}", docHandlers.UpdateDocument)
+			r.Delete("/{id}", docHandlers.DeleteDocument)
+		})
 	})
 
 	return r, nil

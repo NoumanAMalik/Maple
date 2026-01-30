@@ -50,6 +50,15 @@ jobs:
       - name: Run linter
         run: bun lint
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Test Go
+        working-directory: apps/collab
+        run: go test ./...
+
       - name: Run tests with coverage
         run: bun test:coverage
         working-directory: apps/web

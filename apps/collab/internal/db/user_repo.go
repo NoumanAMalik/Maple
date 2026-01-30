@@ -11,9 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrNotFound = errors.New("not found")
-var ErrDuplicate = errors.New("duplicate")
-
 type UserRepo struct {
 	pool *pgxpool.Pool
 }
