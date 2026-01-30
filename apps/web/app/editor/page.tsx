@@ -16,6 +16,7 @@ import {
 } from "@/components/Editor";
 import type { CodeEditorHandle } from "@/components/Editor/CodeEditor";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { registerDefaultCommands } from "@/lib/commands/defaultCommands";
 import { useFindReplace } from "@/hooks/useFindReplace";
 import { useCollab } from "@/hooks/useCollab";
@@ -80,6 +81,7 @@ function EditorContent() {
     const didAttemptJoinRef = useRef(false);
 
     const collab = useCollab();
+    const { user } = useAuth();
 
     const handleLocalOperations = useCallback(
         (ops: Operation[]) => {
@@ -97,6 +99,12 @@ function EditorContent() {
         if (!collab.remoteOpsEvent) return;
         editorRef.current?.applyRemoteOperations(collab.remoteOpsEvent.ops);
     }, [collab.remoteOpsEvent]);
+
+    useEffect(() => {
+        if (user?.displayName && collab.displayName === "You") {
+            collab.setDisplayName(user.displayName);
+        }
+    }, [user?.displayName, collab.displayName, collab.setDisplayName]);
 
     // Handle snapshot restoration
     useEffect(() => {
@@ -569,11 +577,13 @@ function EditorContent() {
 
 export default function EditorPage() {
     return (
-        <WorkspaceProvider>
-            <Suspense fallback={<EditorLoadingFallback />}>
-                <EditorContent />
-            </Suspense>
-        </WorkspaceProvider>
+        <AuthProvider>
+            <WorkspaceProvider>
+                <Suspense fallback={<EditorLoadingFallback />}>
+                    <EditorContent />
+                </Suspense>
+            </WorkspaceProvider>
+        </AuthProvider>
     );
 }
 

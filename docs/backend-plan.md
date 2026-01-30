@@ -422,6 +422,7 @@ type Claims struct {
 | POST | `/v1/auth/login` | Login, receive tokens |
 | POST | `/v1/auth/refresh` | Refresh access token |
 | POST | `/v1/auth/logout` | Invalidate refresh token |
+| POST | `/v1/auth/password` | Change password (requires auth) |
 | GET | `/v1/me` | Get current user profile |
 
 #### Documents
@@ -611,6 +612,10 @@ JWT_SIGNING_KEY=<32+ byte secret>
 REFRESH_TOKEN_PEPPER=<32+ byte secret>
 ACCESS_TOKEN_EXPIRY=15m
 REFRESH_TOKEN_EXPIRY=720h
+REFRESH_COOKIE_NAME=maple_refresh
+COOKIE_DOMAIN=.maple.yourdomain.com
+COOKIE_SECURE=true
+COOKIE_SAMESITE=lax
 
 # CORS
 CORS_ORIGINS=https://maple.yourdomain.com
@@ -636,7 +641,7 @@ API_INTERNAL_URL=http://collab:8080
 
 ```dockerfile
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -644,16 +649,16 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /collab ./cmd/collab
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/collab ./cmd/collab
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /collab .
+COPY --from=builder /app/collab ./collab
 COPY migrations ./migrations
 
 EXPOSE 8080
@@ -1008,15 +1013,44 @@ interface OutboxOp {
 
 **Tasks:**
 - [ ] Add PostgreSQL service on Railway
-- [ ] Configure pgxpool connection
-- [ ] Create migrations infrastructure
-- [ ] Create base tables: `users`, `sessions`
-- [ ] Implement password hashing (Argon2id)
-- [ ] Create register/login/refresh/logout endpoints
-- [ ] Add auth middleware
-- [ ] JWT + refresh token flow
+- [x] Configure pgxpool connection
+- [x] Create migrations infrastructure
+- [x] Create base tables: `users`, `sessions`
+- [x] Implement password hashing (Argon2id)
+- [x] Create register/login/refresh/logout endpoints
+- [x] Add auth middleware
+- [x] JWT + refresh token flow
 
 **Milestone:** Users can register, login, call `/me`
+
+---
+
+#### Phase 5 Execution Log (2026-01-29)
+
+Workstreams (subagents):
+- Subagent A: Railway + migrations wiring
+- Subagent B: Auth core (password hashing, JWT, refresh tokens)
+- Subagent C: HTTP + config integration
+
+Completed work (code-level):
+- Added database config and pgxpool connection wiring
+- Added migrations and `collab migrate up/down`, plus Railway preDeployCommand
+- Implemented users/sessions repositories with Argon2id password hashing
+- Implemented JWT access tokens, refresh token rotation, and auth middleware
+- Added `/v1/auth/*` and `/v1/me` endpoints
+
+Remaining infra steps:
+- Provision Railway Postgres service
+- Set required environment variables in Railway
+- Deploy and verify migrations + auth flow in production
+
+Railway CLI quick steps:
+1. `railway login`
+2. `railway link` (select project and environment)
+3. `railway add` and choose PostgreSQL
+4. Confirm `DATABASE_URL` is injected into the `collab` service
+5. Set env vars (see below) in Railway for `collab`
+6. Deploy with `railway up` (preDeploy runs `./collab migrate up`)
 
 ---
 
